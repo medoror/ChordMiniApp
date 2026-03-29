@@ -24,7 +24,9 @@ npx jest tests/unit/path/to/file.test.ts  # Run a single test file
 ### Python Backend
 ```bash
 cd python_backend
+python3 -m venv myenv       # Create virtualenv (first time only)
 source myenv/bin/activate   # Activate virtualenv
+pip install -r requirements.txt  # Install deps (first time only)
 python app.py               # Dev server on port 5001
 ```
 
