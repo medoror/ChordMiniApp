@@ -96,3 +96,22 @@ __tests__/      # Additional test files + Playwright config
 ```
 
 Run Playwright E2E tests with `npm run test:e2e` (requires a running dev server).
+
+## Task Management with Yaks
+
+This project uses [`yx` (yaks)](https://github.com/mattwynne/yaks) — a shared, conflict-free TODO list for humans and AI agents.
+
+The yak map is a tree of nested goals. Use it to discover, claim, and complete work:
+
+```bash
+yx ls                                  # Show the current work tree
+yx ls --format json                    # Machine-readable output (preferred for agents)
+yx add "Fix the thing"                 # Add a new yak
+yx add "Sub-task" --under "Fix the thing"  # Nest under a parent
+yx state "Fix the thing" wip           # Claim a yak before starting work
+echo "notes" | yx field "Fix the thing" progress  # Store progress notes
+yx done "Fix the thing"                # Mark complete
+yx sync                                # Sync with teammates
+```
+
+**Agent workflow:** Before starting work, run `yx ls --format json` to discover what's planned. Mark a yak `wip` when you begin, update the `progress` field as you go, and mark it `done` when finished. Run `yx sync` after completing work.
