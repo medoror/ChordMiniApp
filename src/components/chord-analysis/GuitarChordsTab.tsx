@@ -120,6 +120,7 @@ export const GuitarChordsTab: React.FC<GuitarChordsTabProps> = ({
   const targetKey = useTargetKey();
 
   const [viewMode, setViewMode] = useState<'animated' | 'summary'>('animated');
+  const [instrumentMode, setInstrumentMode] = useState<'guitar' | 'baritoneukulele'>('guitar');
   const [chordDataCache, setChordDataCache] = useState<Map<string, ChordData | null>>(new Map());
   const [isLoadingChords, setIsLoadingChords] = useState<boolean>(false);
 
@@ -210,6 +211,11 @@ export const GuitarChordsTab: React.FC<GuitarChordsTabProps> = ({
   }, []);
 
 
+
+  // Clear chord data cache when instrument mode changes so diagrams reload
+  useEffect(() => {
+    setChordDataCache(new Map());
+  }, [instrumentMode]);
 
   // Pull analysis toggles and data from Zustand stores when not provided via props
   // Segmentation toggle from UIStore
@@ -358,7 +364,12 @@ export const GuitarChordsTab: React.FC<GuitarChordsTabProps> = ({
         setIsLoadingChords(true);
         try {
           const results = await Promise.all(
-            Array.from(chordsToLoad).map(async (chord) => ({ chord, data: await chordMappingService.getChordData(chord) }))
+            Array.from(chordsToLoad).map(async (chord) => ({
+              chord,
+              data: instrumentMode === 'baritoneukulele'
+                ? chordMappingService.getBaritonUkeChordDataSync(chord)
+                : await chordMappingService.getChordData(chord)
+            }))
           );
           setChordDataCache(cache => {
             const updatedCache = new Map(cache);
@@ -370,7 +381,7 @@ export const GuitarChordsTab: React.FC<GuitarChordsTabProps> = ({
       }
     };
     loadChordData();
-  }, [uniqueChordsForGuitarDiagrams, currentChordNameForCache, chordDataCache]);
+  }, [uniqueChordsForGuitarDiagrams, currentChordNameForCache, chordDataCache, instrumentMode]);
 
   // Unfiltered chord data for guitar diagrams (always shows all chords with consistent corrections)
   const uniqueChordDataForGuitarDiagrams = useMemo(() => {
@@ -534,6 +545,28 @@ export const GuitarChordsTab: React.FC<GuitarChordsTabProps> = ({
             {/* Divider */}
             <div className="hidden h-6 w-px bg-gray-300 dark:bg-gray-600 sm:block" />
 
+            {/* Instrument selector */}
+            <span className="text-xs font-medium text-gray-700 dark:text-gray-300 sm:text-sm">Instrument:</span>
+            <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+              <button
+                onClick={() => setInstrumentMode('guitar')}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors sm:px-3 sm:py-1.5 sm:text-sm ${instrumentMode === 'guitar' ? 'bg-blue-600 text-white shadow-sm' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+                title="Guitar chord diagrams (6-string, EADGBE)"
+              >
+                Guitar
+              </button>
+              <button
+                onClick={() => setInstrumentMode('baritoneukulele')}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors sm:px-3 sm:py-1.5 sm:text-sm ${instrumentMode === 'baritoneukulele' ? 'bg-blue-600 text-white shadow-sm' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+                title="Baritone ukulele chord diagrams (4-string, DGBE)"
+              >
+                Baritone Uke
+              </button>
+            </div>
+
+            {/* Divider */}
+            <div className="hidden h-6 w-px bg-gray-300 dark:bg-gray-600 sm:block" />
+
             {/* View mode toggle */}
             <span className="text-xs font-medium text-gray-700 dark:text-gray-300 sm:text-sm">View:</span>
             <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
@@ -612,6 +645,7 @@ export const GuitarChordsTab: React.FC<GuitarChordsTabProps> = ({
                           showRomanNumerals={false}
                           romanNumeral=""
                           labelClassName={diagramConfig.labelClass}
+                          instrument={instrumentMode}
                         />
                       </motion.div>
                     );
@@ -621,7 +655,10 @@ export const GuitarChordsTab: React.FC<GuitarChordsTabProps> = ({
           </div>
         ) : !isLoadingChords && (
           <div className="summary-chord-view relative p-4 sm:p-6">
-            <h3 className="mb-4 text-center text-base font-medium text-gray-700 dark:text-gray-300 sm:mb-6 sm:text-lg">All Chords in Song ({uniqueChordsForGuitarDiagrams.length} unique)</h3>
+            <h3 className="mb-4 text-center text-base font-medium text-gray-700 dark:text-gray-300 sm:mb-6 sm:text-lg">
+              All Chords in Song ({uniqueChordsForGuitarDiagrams.length} unique)
+              {instrumentMode === 'baritoneukulele' && <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">— Baritone Ukulele</span>}
+            </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-4 md:gap-6 justify-items-center">
               {uniqueChordDataForGuitarDiagrams.map(({name, data}, index) => (
                 <div key={index} className="flex justify-center">
@@ -640,6 +677,7 @@ export const GuitarChordsTab: React.FC<GuitarChordsTabProps> = ({
                     capoLabelMode={capoLabelMode}
                     showRomanNumerals={false}
                     romanNumeral=""
+                    instrument={instrumentMode}
                   />
                 </div>
               ))}

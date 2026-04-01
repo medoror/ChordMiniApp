@@ -6,8 +6,9 @@
  * Now uses the official @tombatossals/chords-db database for accurate chord fingerings.
  */
 
-// Import the official chord database
+// Import the official chord databases
 import guitarChordsDb from '@tombatossals/chords-db/lib/guitar.json';
+import ukeChordsDb from '@tombatossals/chords-db/lib/ukulele.json';
 import { getBassNoteFromInversion } from '@/utils/chordFormatting';
 
 interface ChordPosition {
@@ -57,6 +58,7 @@ interface ChordLookupCandidate {
 
 // Use the official chord database
 let guitarChords: ChordDatabase | null = null;
+let ukuleleChords: ChordDatabase | null = null;
 
 async function loadChordDatabase(): Promise<ChordDatabase> {
   if (!guitarChords) {
@@ -71,6 +73,13 @@ function getChordDatabaseSync(): ChordDatabase {
     guitarChords = guitarChordsDb as ChordDatabase;
   }
   return guitarChords;
+}
+
+function getUkeDatabaseSync(): ChordDatabase {
+  if (!ukuleleChords) {
+    ukuleleChords = ukeChordsDb as ChordDatabase;
+  }
+  return ukuleleChords;
 }
 
 /**
@@ -485,6 +494,80 @@ export class ChordMappingService {
     }
 
     return null;
+  }
+
+  // Semitone values for each root note (C=0 … B=11)
+  private readonly rootToSemitone: Record<string, number> = {
+    'C': 0, 'B#': 0,
+    'Csharp': 1, 'C#': 1, 'Db': 1,
+    'D': 2,
+    'Eb': 3, 'D#': 3,
+    'E': 4, 'Fb': 4,
+    'F': 5, 'E#': 5,
+    'Fsharp': 6, 'F#': 6, 'Gb': 6,
+    'G': 7,
+    'Ab': 8, 'G#': 8,
+    'A': 9,
+    'Bb': 10, 'A#': 10,
+    'B': 11, 'Cb': 11,
+  };
+
+  // Uke DB uses flat spellings: Db, Eb, Gb, Ab, Bb
+  private readonly semitoneToUkeKey: string[] = [
+    'C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'
+  ];
+
+  /**
+   * Transpose a baritone uke root up 5 semitones to get the standard uke DB key.
+   * Baritone DGBE is 5 semitones below standard GCEA, so the same physical shape
+   * on a standard uke produces the baritone chord when played on a baritone uke.
+   */
+  private transposeRootToBaritonUkeKey(root: string): string | null {
+    const normalizedNote = this.normalizeNoteToken(root);
+    // Resolve via guitar enharmonic map first (maps C#→Csharp etc.), then direct lookup
+    const resolvedNote = this.enharmonicMap[normalizedNote] || normalizedNote;
+    const semitone = this.rootToSemitone[resolvedNote] ?? this.rootToSemitone[normalizedNote];
+    if (semitone === undefined) return null;
+    return this.semitoneToUkeKey[(semitone + 5) % 12];
+  }
+
+  /**
+   * Normalize a suffix to match the ukulele DB format.
+   * Both guitar and uke DBs use 'mmaj7', but the suffixMap normalizes to 'mMaj7',
+   * so we fix that case here.
+   */
+  private normalizeUkeSuffix(suffix: string): string {
+    const normalized = this.normalizeSuffix(suffix);
+    if (normalized === 'mMaj7') return 'mmaj7';
+    return normalized;
+  }
+
+  /**
+   * Look up baritone ukulele chord data.
+   * Transposes the chord root up 5 semitones and looks it up in the standard
+   * ukulele DB (GCEA tuning). The resulting fingering, rendered with DGBE string
+   * labels, gives the correct baritone uke voicing.
+   *
+   * Slash chords are resolved to their root chord (the uke DB has no slash entries).
+   */
+  public getBaritonUkeChordDataSync(chordName: string): ChordData | null {
+    const parsed = this.parseChordName(chordName);
+    if (!parsed) return null;
+
+    const ukeKey = this.transposeRootToBaritonUkeKey(parsed.root);
+    if (!ukeKey) return null;
+
+    const normalizedSuffix = this.normalizeUkeSuffix(parsed.suffix);
+    const ukeDb = getUkeDatabaseSync();
+    const rootChords = ukeDb.chords[ukeKey];
+    if (!rootChords) return null;
+
+    // Try exact suffix match, then fall back to major
+    return (
+      rootChords.find(chord => chord.suffix === normalizedSuffix) ||
+      rootChords.find(chord => chord.suffix === 'major') ||
+      null
+    );
   }
 
   /**

@@ -42,7 +42,7 @@ interface GuitarChordDiagramProps {
   romanNumeral?: React.ReactElement | string;
   labelClassName?: string;
   romanNumeralClassName?: string;
-
+  instrument?: 'guitar' | 'baritoneukulele';
 }
 
 // Standard guitar instrument configuration
@@ -53,6 +53,17 @@ const GUITAR_INSTRUMENT = {
   keys: [],
   tunings: {
     standard: ['E', 'A', 'D', 'G', 'B', 'E']
+  }
+};
+
+// Baritone ukulele instrument configuration (tuned D-G-B-E)
+const BARITONE_UKE_INSTRUMENT = {
+  strings: 4,
+  fretsOnChord: 4,
+  name: 'Baritone Ukulele',
+  keys: [],
+  tunings: {
+    standard: ['D', 'G', 'B', 'E']
   }
 };
 
@@ -115,7 +126,8 @@ const GuitarChordDiagramComponent: React.FC<GuitarChordDiagramProps> = ({
   showRomanNumerals = false,
   romanNumeral,
   labelClassName,
-  romanNumeralClassName
+  romanNumeralClassName,
+  instrument = 'guitar',
 }) => {
   // Size configurations - responsive sizing
   const sizeConfig = {
@@ -258,7 +270,7 @@ const GuitarChordDiagramComponent: React.FC<GuitarChordDiagramProps> = ({
         <div className="chord-diagram-svg">
           <Chord
             chord={chordForDiagram}
-            instrument={GUITAR_INSTRUMENT}
+            instrument={instrument === 'baritoneukulele' ? BARITONE_UKE_INSTRUMENT : GUITAR_INSTRUMENT}
             lite={lite}
           />
         </div>
@@ -351,6 +363,7 @@ const areChordDiagramPropsEqual = (
   if (prevProps.romanNumeral !== nextProps.romanNumeral) return false;
   if (prevProps.labelClassName !== nextProps.labelClassName) return false;
   if (prevProps.romanNumeralClassName !== nextProps.romanNumeralClassName) return false;
+  if (prevProps.instrument !== nextProps.instrument) return false;
   return true;
 };
 
