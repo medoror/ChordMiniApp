@@ -3,6 +3,7 @@ import {
   doc,
   getDoc,
   setDoc,
+  deleteDoc,
   query,
   where,
   getDocs,
@@ -347,6 +348,25 @@ export async function updateTranscriptionEnrichment(
       console.warn('🌐 Network/CORS error updating transcription enrichment - disabling Firestore for this session');
       firestoreDisabled = true;
     }
+    return false;
+  }
+}
+
+export async function deleteTranscription(
+  videoId: string,
+  beatModel: string,
+  chordModel: string
+): Promise<boolean> {
+  if (!db || firestoreDisabled) {
+    return false;
+  }
+  try {
+    const docId = buildTranscriptionDocId(videoId, beatModel, chordModel);
+    const docRef = doc(db, TRANSCRIPTIONS_COLLECTION, docId);
+    await deleteDoc(docRef);
+    return true;
+  } catch (error) {
+    console.error('Error deleting transcription from Firestore:', error);
     return false;
   }
 }

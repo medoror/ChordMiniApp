@@ -1,5 +1,19 @@
 import type { ITranscriptionRepository, TranscriptionData } from '@/repositories/ITranscriptionRepository';
 
+// Prevent Firebase from initializing in unit test environment
+jest.mock('@/config/firebase', () => ({ db: {}, auth: null, storage: null }));
+jest.mock('firebase/firestore', () => ({
+  collection: jest.fn(),
+  doc: jest.fn().mockReturnValue({}),
+  getDoc: jest.fn().mockResolvedValue({ exists: () => false, data: () => undefined }),
+  setDoc: jest.fn().mockResolvedValue(undefined),
+  deleteDoc: jest.fn().mockResolvedValue(undefined),
+  query: jest.fn(),
+  where: jest.fn(),
+  getDocs: jest.fn().mockResolvedValue({ docs: [] }),
+  Timestamp: { now: jest.fn(), fromMillis: jest.fn(), fromDate: jest.fn() },
+}));
+
 const SAMPLE: Omit<TranscriptionData, 'createdAt'> = {
   videoId: 'testVideoId1',
   beatModel: 'madmom',
@@ -50,5 +64,12 @@ export function runTranscriptionRepositoryContractTests(
 describe('ITranscriptionRepository contract suite', () => {
   it('exports the contract runner function', () => {
     expect(typeof runTranscriptionRepositoryContractTests).toBe('function');
+  });
+});
+
+describe('firestoreService exports deleteTranscription', () => {
+  it('should_export_deleteTranscription_as_a_function', async () => {
+    const { deleteTranscription } = await import('@/services/firebase/firestoreService');
+    expect(typeof deleteTranscription).toBe('function');
   });
 });
