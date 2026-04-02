@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import {
-  deleteNonCompletedSegmentationJobsByRequestHash,
-  getSegmentationJob,
   getSegmentationJobTtlMs,
   isSegmentationJobStale,
-  updateSegmentationJob,
-  verifySegmentationJobUpdateToken,
 } from '@/services/firebase/segmentationJobService';
+import { repositories } from '@/repositories';
 import { normalizeSongFormerSegmentation } from '@/services/lyrics/songSegmentationService';
 import { SegmentationResult } from '@/types/chatbotTypes';
 import { SongContext } from '@/types/chatbotTypes';
@@ -63,7 +60,7 @@ function getStaleJobError(status: 'created' | 'processing'): string {
 export async function GET(_request: NextRequest, { params }: RouteParams) {
   try {
     const { jobId } = await params;
-    const job = await getSegmentationJob(jobId);
+    const job = await repositories.jobs.getJob(jobId);
 
     if (!job) {
       return NextResponse.json(
@@ -129,7 +126,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ success: false, error: 'updateToken is required' }, { status: 400 });
     }
 
-    const existingJob = await verifySegmentationJobUpdateToken(jobId, body.updateToken);
+    const existingJob = await repositories.jobs.verifyUpdateToken(jobId, body.updateToken);
     if (!existingJob) {
       return NextResponse.json({ success: false, error: 'Invalid segmentation job token' }, { status: 403 });
     }
@@ -147,7 +144,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       : undefined);
     const sanitizedData = sanitizeSegmentationResult(normalizedData);
 
-    await updateSegmentationJob(jobId, {
+    await repositories.jobs.updateJob(jobId, {
       status: body.status,
       error: body.status === 'failed' ? body.error || 'SongFormer segmentation failed' : undefined,
       result: body.status === 'completed' ? sanitizedData : undefined,
@@ -155,7 +152,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     });
 
     if (body.status === 'completed') {
-      await deleteNonCompletedSegmentationJobsByRequestHash(existingJob.requestHash, {
+      await repositories.jobs.deleteJobsByHash(existingJob.requestHash, {
         excludeJobId: jobId,
       });
     }

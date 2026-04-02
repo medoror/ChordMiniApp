@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import {
-  cleanupStaleSegmentationJobs,
-  getSegmentationJobTtlMs,
-} from '@/services/firebase/segmentationJobService';
+import { getSegmentationJobTtlMs } from '@/services/firebase/segmentationJobService';
+import { repositories } from '@/repositories';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -53,9 +51,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const result = await cleanupStaleSegmentationJobs({
-      limit: resolveCleanupLimit(request),
-    });
+    const result = await repositories.jobs.cleanupStaleJobs({ limit: resolveCleanupLimit(request) });
 
     return NextResponse.json({
       success: true,

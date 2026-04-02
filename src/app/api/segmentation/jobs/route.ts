@@ -5,13 +5,8 @@ import {
   getSegmentationAccessMissingConfigurationMessage,
   validateSegmentationAccessCode,
 } from '@/services/api/segmentationAccessService';
-import {
-  buildSegmentationRequestHash,
-  createSegmentationJob,
-  deleteNonCompletedSegmentationJobsByRequestHash,
-  findActiveSegmentationJobByRequestHash,
-  findCompletedSegmentationJobByRequestHash,
-} from '@/services/firebase/segmentationJobService';
+import { buildSegmentationRequestHash } from '@/services/firebase/segmentationJobService';
+import { repositories } from '@/repositories';
 import { SegmentationRequest } from '@/types/chatbotTypes';
 
 export const maxDuration = 60;
@@ -52,24 +47,23 @@ export async function POST(request: NextRequest) {
 
     const audioUrl = resolveAudioUrl(songContext.audioUrl as string, request);
     const requestHash = buildSegmentationRequestHash(songContext, audioUrl);
-    const cachedJob = await findCompletedSegmentationJobByRequestHash(requestHash);
+    const existingJob = await repositories.jobs.findJobByHash(requestHash);
 
-    if (cachedJob?.result) {
+    if (existingJob?.result && existingJob.status === 'completed') {
       return NextResponse.json({
         success: true,
-        jobId: cachedJob.jobId,
+        jobId: existingJob.jobId,
         status: 'completed',
-        data: cachedJob.result,
+        data: existingJob.result,
         cached: true,
       });
     }
 
-    const activeJob = await findActiveSegmentationJobByRequestHash(requestHash);
-    if (activeJob) {
+    if (existingJob && (existingJob.status === 'created' || existingJob.status === 'processing')) {
       return NextResponse.json({
         success: true,
-        jobId: activeJob.jobId,
-        status: activeJob.status,
+        jobId: existingJob.jobId,
+        status: existingJob.status,
         reused: true,
       });
     }
@@ -83,9 +77,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await deleteNonCompletedSegmentationJobsByRequestHash(requestHash);
+    await repositories.jobs.deleteJobsByHash(requestHash);
 
-    const { jobId, updateToken } = await createSegmentationJob(songContext, audioUrl);
+    const { jobId, updateToken } = await repositories.jobs.createJob(songContext, audioUrl);
     const callbackUrl = `${resolveCallbackBaseUrl(request)}/api/segmentation/jobs/${jobId}`;
 
     return NextResponse.json({
