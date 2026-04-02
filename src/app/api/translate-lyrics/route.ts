@@ -7,8 +7,6 @@ import { createGeminiClient, GEMINI_MODEL_NAME } from '@/config/gemini';
 // Define the model name to use
 const MODEL_NAME = GEMINI_MODEL_NAME;
 
-// Translation cache collection is imported from firebase.ts
-
 interface TranslationRequest {
   lyrics: string;
   sourceLanguage?: string; // Optional source language
@@ -53,7 +51,10 @@ async function checkCache(cacheKey: string): Promise<TranslationResponse | null>
     const data = await repositories.lyrics.getTranslation(cacheKey);
     // TranslationData has [key: string]: unknown — stores the full TranslationResponse blob
     return data as unknown as TranslationResponse | null;
-  } catch { return null; }
+  } catch (error) {
+    console.warn('Error checking translation cache:', error);
+    return null;
+  }
 }
 
 /**
