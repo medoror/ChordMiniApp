@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
-import { db, TRANSLATIONS_COLLECTION } from '@/config/firebase';
-import { collection, doc, getDoc, setDoc, Firestore, serverTimestamp } from 'firebase/firestore';
+import { repositories } from '@/repositories';
 import crypto from 'crypto';
 import { createGeminiClient, GEMINI_MODEL_NAME } from '@/config/gemini';
 
@@ -51,30 +50,10 @@ function generateCacheKey(lyrics: string, sourceLanguage?: string, targetLanguag
  */
 async function checkCache(cacheKey: string): Promise<TranslationResponse | null> {
   try {
-    if (!db) {
-      console.warn('Firebase not initialized, skipping cache check');
-      return null;
-    }
-
-    // Wrap Firestore operations in try-catch to handle CORS and other access issues
-    try {
-      const translationsRef = collection(db as Firestore, TRANSLATIONS_COLLECTION);
-      const docRef = doc(translationsRef, cacheKey);
-      const docSnap = await getDoc(docRef);
-
-      if (docSnap.exists()) {
-        return docSnap.data() as TranslationResponse;
-      }
-    } catch (firestoreError) {
-      console.warn('Firestore access error, proceeding without cache:', firestoreError);
-      // Continue execution without using cache
-    }
-
-    return null;
-  } catch (error) {
-    console.error('Error checking translation cache:', error);
-    return null;
-  }
+    const data = await repositories.lyrics.getTranslation(cacheKey);
+    // TranslationData has [key: string]: unknown — stores the full TranslationResponse blob
+    return data as unknown as TranslationResponse | null;
+  } catch { return null; }
 }
 
 /**
@@ -82,29 +61,13 @@ async function checkCache(cacheKey: string): Promise<TranslationResponse | null>
  */
 async function cacheTranslation(cacheKey: string, data: TranslationResponse, videoId?: string): Promise<void> {
   try {
-    if (!db) {
-      console.warn('Firebase not initialized, skipping cache storage');
-      return;
-    }
-
-    try {
-      const translationsRef = collection(db as Firestore, TRANSLATIONS_COLLECTION);
-      const docRef = doc(translationsRef, cacheKey);
-      const dataWithTimestamp = {
-        ...data,
-        videoId: videoId || 'unknown', // Add videoId required by Firestore rules
-        createdAt: serverTimestamp(), // Use Firestore serverTimestamp instead of Date.now()
-      };
-      await setDoc(docRef, dataWithTimestamp);
-      console.log('Successfully cached translation data');
-    } catch (firestoreError) {
-      console.warn('Firestore access error, unable to cache translation:', firestoreError);
-      // Continue execution without caching
-    }
-  } catch (error) {
-    console.error('Error caching translation:', error);
-    // Non-critical error, continue execution
-  }
+    // language required by TranslationData; map from sourceLanguage
+    await repositories.lyrics.setTranslation(cacheKey, {
+      ...data,
+      language: data.sourceLanguage,
+      videoId: videoId ?? '',
+    });
+  } catch { }
 }
 
 /**

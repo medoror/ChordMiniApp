@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs/promises';
 import musicAiService from '@/services/lyrics/musicAiService';
-import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
-import { firebaseApp } from '@/services/firebase/firebaseService';
+import { repositories } from '@/repositories';
 
 interface CachedLyricsData {
   lyrics?: string;
@@ -50,19 +49,13 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ [API] Video ID provided:', videoId);
 
-    // Initialize Firestore
-    const db = getFirestore(firebaseApp);
-    console.log('🔥 [API] Firestore initialized');
-
-    // Check if lyrics are already cached in Firestore (unless forceRefresh is true)
-    console.log('🔍 [API] Checking for cached lyrics in Firestore...');
-    const lyricsDocRef = doc(db, 'lyrics', videoId);
-    const lyricsDoc = await getDoc(lyricsDocRef);
+    // Check if lyrics are already cached (unless forceRefresh is true)
+    console.log('🔍 [API] Checking for cached lyrics...');
+    const cachedData = forceRefresh ? null : await repositories.lyrics.getLyrics(videoId) as CachedLyricsData | null;
 
     // If lyrics are cached and forceRefresh is not true, return them
-    if (lyricsDoc.exists() && !forceRefresh) {
+    if (cachedData) {
       console.log(`✅ [API] Found cached lyrics for video ID: ${videoId}`);
-      const cachedData = lyricsDoc.data() as CachedLyricsData;
       console.log('📦 [API] Cached data structure:', {
         type: typeof cachedData,
         hasLyrics: !!cachedData?.lyrics,
@@ -155,7 +148,7 @@ export async function POST(request: NextRequest) {
       }, { status: 404 });
     }
 
-    if (forceRefresh && lyricsDoc.exists()) {
+    if (forceRefresh) {
       console.log(`Force refreshing lyrics for video ID: ${videoId}`);
     }
 
@@ -224,30 +217,6 @@ export async function POST(request: NextRequest) {
     // Cache the results in Firestore (non-critical operation)
     // Use the same direct approach as translations to avoid authentication issues
     try {
-      console.log('🔍 [PRODUCTION DEBUG] Starting lyrics caching process...');
-      console.log('🔍 [PRODUCTION DEBUG] Video ID:', videoId, 'Length:', videoId?.length, 'Type:', typeof videoId);
-
-      // Analyze the raw lyricsData structure
-      console.log('🔍 [PRODUCTION DEBUG] Raw lyricsData analysis:');
-      console.log('🔍 [PRODUCTION DEBUG] - Type:', typeof lyricsData);
-      console.log('🔍 [PRODUCTION DEBUG] - Is null/undefined:', lyricsData == null);
-      console.log('🔍 [PRODUCTION DEBUG] - Constructor:', lyricsData?.constructor?.name);
-      console.log('🔍 [PRODUCTION DEBUG] - Keys:', Object.keys(lyricsData || {}));
-      console.log('🔍 [PRODUCTION DEBUG] - Lines type:', typeof lyricsData?.lines);
-      console.log('🔍 [PRODUCTION DEBUG] - Lines length:', lyricsData?.lines?.length);
-      console.log('🔍 [PRODUCTION DEBUG] - Lines is array:', Array.isArray(lyricsData?.lines));
-
-      // Sample first few lines for structure analysis
-      if (lyricsData?.lines && Array.isArray(lyricsData.lines) && lyricsData.lines.length > 0) {
-        console.log('🔍 [PRODUCTION DEBUG] - First line structure:', JSON.stringify(lyricsData.lines[0], null, 2));
-        if (lyricsData.lines.length > 1) {
-          console.log('🔍 [PRODUCTION DEBUG] - Second line structure:', JSON.stringify(lyricsData.lines[1], null, 2));
-        }
-      }
-
-      const lyricsDocRef = doc(db, 'lyrics', videoId);
-      console.log('🔍 [PRODUCTION DEBUG] Document reference created for collection: lyrics, document:', videoId);
-
       const dataWithTimestamp = {
         ...lyricsData,
         videoId,
@@ -256,70 +225,10 @@ export async function POST(request: NextRequest) {
         source: 'music-ai-transcription'
       };
 
-      console.log('🔍 [PRODUCTION DEBUG] Final data structure analysis:');
-      console.log('🔍 [PRODUCTION DEBUG] - Total fields:', Object.keys(dataWithTimestamp).length);
-      console.log('🔍 [PRODUCTION DEBUG] - Field names:', Object.keys(dataWithTimestamp));
-      console.log('🔍 [PRODUCTION DEBUG] - videoId:', dataWithTimestamp.videoId);
-      console.log('🔍 [PRODUCTION DEBUG] - timestamp:', dataWithTimestamp.timestamp);
-      console.log('🔍 [PRODUCTION DEBUG] - cached:', dataWithTimestamp.cached);
-      console.log('🔍 [PRODUCTION DEBUG] - source:', dataWithTimestamp.source);
-      console.log('🔍 [PRODUCTION DEBUG] - lines count:', dataWithTimestamp.lines?.length);
-
-      // Check for any problematic field types or values
-      for (const [key, value] of Object.entries(dataWithTimestamp)) {
-        const valueType = typeof value;
-        const isArray = Array.isArray(value);
-        const isNull = value === null;
-        const isUndefined = value === undefined;
-        console.log(`🔍 [PRODUCTION DEBUG] - Field "${key}": type=${valueType}, isArray=${isArray}, isNull=${isNull}, isUndefined=${isUndefined}`);
-
-        // Check for circular references or complex objects
-        if (valueType === 'object' && !isArray && !isNull) {
-          try {
-            JSON.stringify(value);
-            console.log(`🔍 [PRODUCTION DEBUG] - Field "${key}" is serializable`);
-          } catch (e) {
-            console.log(`🔍 [PRODUCTION DEBUG] - Field "${key}" has serialization issues:`, e instanceof Error ? e.message : String(e));
-          }
-        }
-      }
-
-      // Calculate approximate document size
-      try {
-        const jsonString = JSON.stringify(dataWithTimestamp);
-        const sizeInBytes = new Blob([jsonString]).size;
-        console.log('🔍 [PRODUCTION DEBUG] - Estimated document size:', sizeInBytes, 'bytes');
-        console.log('🔍 [PRODUCTION DEBUG] - Size in KB:', (sizeInBytes / 1024).toFixed(2), 'KB');
-
-        // Firestore has a 1MB document size limit
-        if (sizeInBytes > 1000000) {
-          console.warn('⚠️ [PRODUCTION DEBUG] - Document size exceeds 1MB limit!');
-        }
-      } catch (sizeError) {
-        console.error('🔍 [PRODUCTION DEBUG] - Error calculating document size:', sizeError);
-      }
-
-      console.log('🔍 [PRODUCTION DEBUG] Attempting setDoc operation...');
-      await setDoc(lyricsDocRef, dataWithTimestamp);
+      await repositories.lyrics.setLyrics(videoId, dataWithTimestamp);
       console.log(`✅ Successfully cached lyrics for video ID: ${videoId}`);
     } catch (cacheError: unknown) {
-      console.error('❌ [PRODUCTION DEBUG] Error caching lyrics - COMPREHENSIVE ERROR ANALYSIS:');
-      console.error('❌ Error type:', typeof cacheError);
-
-      const errorObj = cacheError as Error & { code?: string; details?: unknown; customData?: unknown };
-      console.error('❌ Error constructor:', errorObj?.constructor?.name);
-      console.error('❌ Error message:', errorObj?.message);
-      console.error('❌ Error code:', errorObj?.code);
-      console.error('❌ Error stack:', errorObj?.stack);
-      console.error('❌ Full error object:', cacheError);
-
-      // Check if it's a FirebaseError
-      if (errorObj?.code) {
-        console.error('❌ Firebase error code:', errorObj.code);
-        console.error('❌ Firebase error details:', errorObj.details);
-        console.error('❌ Firebase error customData:', errorObj.customData);
-      }
-
+      console.error('❌ Error caching lyrics:', cacheError);
       // Continue even if caching fails - this is non-critical
     }
 
