@@ -20,6 +20,22 @@ export interface IJobRepository {
    */
   findJobByHash(requestHash: string): Promise<SegmentationJobDocument | null>;
 
-  /** Delete stale jobs. Returns count of deleted jobs. */
-  cleanupStaleJobs(): Promise<number>;
+  /**
+   * Verify a job's update token. Returns the job if valid, null if invalid or not found.
+   * Used by the SongFormer callback endpoint to authenticate status updates.
+   */
+  verifyUpdateToken(jobId: string, updateToken: string): Promise<SegmentationJobDocument | null>;
+
+  /**
+   * Delete non-completed jobs matching requestHash (used to clean up duplicates).
+   * If excludeJobId is provided, that job is preserved.
+   * Returns the number of jobs deleted.
+   */
+  deleteJobsByHash(requestHash: string, options?: { excludeJobId?: string }): Promise<number>;
+
+  /**
+   * Delete stale jobs. Returns a result object with deleted count, scanned count, and IDs.
+   * Preserving the full shape avoids a breaking change in the cron route's API response.
+   */
+  cleanupStaleJobs(options?: { limit?: number }): Promise<{ deletedCount: number; scannedCount: number; staleJobIds: string[] }>;
 }

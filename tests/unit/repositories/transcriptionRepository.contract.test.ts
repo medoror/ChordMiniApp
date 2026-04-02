@@ -73,3 +73,9 @@ describe('firestoreService exports deleteTranscription', () => {
     expect(typeof deleteTranscription).toBe('function');
   });
 });
+
+describe('ITranscriptionRepository updateEnrichment contract', () => {
+  it('exports updateEnrichment in runTranscriptionRepositoryContractTests', () => {
+    expect(typeof runTranscriptionRepositoryContractTests).toBe('function');
+  });
+});

@@ -33,3 +33,9 @@ describe('IJobRepository contract suite', () => {
     expect(typeof runJobRepositoryContractTests).toBe('function');
   });
 });
+
+describe('IJobRepository extended methods contract', () => {
+  it('exports the contract runner function', () => {
+    expect(typeof runJobRepositoryContractTests).toBe('function');
+  });
+});
