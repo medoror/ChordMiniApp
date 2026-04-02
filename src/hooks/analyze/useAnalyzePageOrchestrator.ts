@@ -6,11 +6,9 @@ import {
   extractAudioFromYouTube as extractAudioFromYouTubeService,
   handleAudioAnalysis as handleAudioAnalysisService,
 } from '@/services/audio/audioProcessingExtracted';
-import {
-  getTranscription,
-  TranscriptionData,
-  updateTranscriptionEnrichment,
-} from '@/services/firebase/firestoreService';
+import { repositories } from '@/repositories';
+import type { TranscriptionData } from '@/repositories/ITranscriptionRepository';
+import type { TranscriptionEnrichmentUpdate } from '@/repositories/ITranscriptionRepository';
 import { ProcessingStage } from '@/contexts/ProcessingContext';
 import { LyricsData } from '@/types/musicAiTypes';
 
@@ -313,7 +311,7 @@ export function useAnalyzePageOrchestrator({
       return transcriptionSnapshotsRef.current[snapshotKey] ?? null;
     }
 
-    const snapshot = await getTranscription(videoId, snapshotBeatDetector, snapshotChordDetector);
+    const snapshot = await repositories.transcriptions.get(videoId, snapshotBeatDetector, snapshotChordDetector);
     transcriptionSnapshotsRef.current[snapshotKey] = snapshot;
     return snapshot;
   }, [beatDetector, chordDetector, videoId]);
@@ -559,14 +557,7 @@ export function useAnalyzePageOrchestrator({
     try {
       setInitialCacheCheckDone(true);
 
-      const { ensureFirebaseInitialized } = await import('@/config/firebase');
-      await ensureFirebaseInitialized();
-
-      const { withFirebaseConnectionCheck } = await import('@/utils/firebaseConnectionManager');
-      const cachedAudio = await withFirebaseConnectionCheck(async () => {
-        const { getCachedAudioFile } = await import('@/services/firebase/firebaseStorageService');
-        return getCachedAudioFile(videoId);
-      }, 'cached audio check');
+      const cachedAudio = await repositories.audio.getMetadata(videoId);
 
       if (cachedAudio) {
         setStage('idle');
@@ -637,11 +628,7 @@ export function useAnalyzePageOrchestrator({
 
       try {
         setCacheCheckInProgress(true);
-        const { withFirebaseConnectionCheck } = await import('@/utils/firebaseConnectionManager');
-        const cachedData = await withFirebaseConnectionCheck(
-          () => loadTranscriptionSnapshot(beatDetector, chordDetector),
-          'analysis cache check'
-        );
+        const cachedData = await loadTranscriptionSnapshot(beatDetector, chordDetector);
 
         setCacheAvailable(!!cachedData);
         setCacheCheckCompleted(true);
@@ -837,7 +824,7 @@ export function useAnalyzePageOrchestrator({
         if (result.primaryKey && result.primaryKey !== 'Unknown') {
           const cachedTranscription = await loadTranscriptionSnapshot(beatDetector, chordDetector);
           if (cachedTranscription) {
-            const updateSucceeded = await updateTranscriptionEnrichment(
+            const updateSucceeded = await repositories.transcriptions.updateEnrichment(
               videoId,
               beatDetector,
               chordDetector,
