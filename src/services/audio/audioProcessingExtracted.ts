@@ -1,5 +1,6 @@
 import { AnalyzeAudioFileOptions } from '@/services/audio/audioProcessingService';
-import { getTranscription, TranscriptionData } from '@/services/firebase/firestoreService';
+import { repositories } from '@/repositories';
+import type { TranscriptionData } from '@/repositories/ITranscriptionRepository';
 import { apiPost } from '@/config/api';
 import { LyricsData } from '@/types/musicAiTypes';
 
@@ -146,7 +147,7 @@ export const handleAudioAnalysis = async (deps: AudioProcessingServiceDependenci
   try {
     cachedData = deps.loadTranscriptionSnapshot
       ? await deps.loadTranscriptionSnapshot(currentBeatDetector, currentChordDetector)
-      : await getTranscription(videoId, currentBeatDetector, currentChordDetector);
+      : await repositories.transcriptions.get(videoId, currentBeatDetector, currentChordDetector);
 
     if (cachedData) {
       deps.setTranscriptionSnapshot?.(cachedData);

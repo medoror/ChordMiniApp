@@ -1,5 +1,6 @@
 import { analyzeAudioWithRateLimit, AnalysisResult, ChordDetectorType } from '@/services/chord-analysis/chordRecognitionService';
-import { getTranscription, saveTranscription, TranscriptionData } from '@/services/firebase/firestoreService';
+import { repositories } from '@/repositories';
+import type { TranscriptionData } from '@/repositories/ITranscriptionRepository';
 
 // Define error types for better type safety
 export interface ErrorWithSuggestion extends Error {
@@ -111,7 +112,7 @@ export class AudioProcessingService {
 
       const cachedData = hasPrefetchedTranscription
         ? options?.prefetchedTranscription ?? null
-        : await getTranscription(videoId, beatDetector, chordDetector);
+        : await repositories.transcriptions.get(videoId, beatDetector, chordDetector);
 
       if (cachedData) {
         // Cache found - loading cached results
@@ -156,10 +157,8 @@ export class AudioProcessingService {
         timestamp: new Date()
       };
 
-      const saveSucceeded = await saveTranscription(transcriptionData);
-      if (saveSucceeded) {
-        options?.onTranscriptionSaved?.(transcriptionData);
-      }
+      await repositories.transcriptions.set(transcriptionData);
+      options?.onTranscriptionSaved?.(transcriptionData);
 
       return analysisResults;
     } catch (error: unknown) {
