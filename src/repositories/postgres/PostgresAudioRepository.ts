@@ -22,9 +22,8 @@ export class PostgresAudioRepository implements IAudioRepository {
   }
 
   /**
-   * Stores audio bytes in the database and returns a synthetic storage URL.
-   * The URL format `db://audio/{videoId}` is a stable key for this video's audio.
-   * HTTP playback routing is handled separately (out of scope for Plan C).
+   * Stores audio bytes in the database and returns an HTTP-accessible URL.
+   * The URL /api/audio/{videoId} is served by the Next.js route GET /api/audio/[videoId].
    */
   async storeAudio(
     videoId: string,
