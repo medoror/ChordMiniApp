@@ -23,7 +23,7 @@ export class PostgresTranscriptionRepository implements ITranscriptionRepository
       `INSERT INTO transcriptions (video_id, beat_model, chord_model, data)
        VALUES ($1, $2, $3, $4)
        ON CONFLICT (video_id, beat_model, chord_model)
-       DO UPDATE SET data = EXCLUDED.data, created_at = NOW()`,
+       DO UPDATE SET data = EXCLUDED.data`,
       [data.videoId, data.beatModel, data.chordModel, JSON.stringify(data)]
     );
   }
@@ -53,7 +53,7 @@ export class PostgresTranscriptionRepository implements ITranscriptionRepository
     const merged = { ...rows[0].data, ...enrichment };
     await query(
       `UPDATE transcriptions
-       SET data = $4, created_at = NOW()
+       SET data = $4
        WHERE video_id = $1 AND beat_model = $2 AND chord_model = $3`,
       [videoId, beatModel, chordModel, JSON.stringify(merged)]
     );
