@@ -22,9 +22,11 @@ import { YtdownIoCompatService } from '@/services/youtube/ytdownIoCompatService'
 import { validateFirebaseStorageUrl, isFirebaseStorageUrl } from '@/utils/urlValidationUtils';
 
 /**
- * Validate Firebase Storage URL accessibility before returning it
- * @param firebaseUrl The Firebase Storage URL to validate
- * @param originalUrl The original URL to fall back to if validation fails
+ * Validate storage URL accessibility before returning it.
+ * Firebase Storage URLs are validated with a HEAD request.
+ * Non-Firebase URLs (e.g. /api/audio/{videoId}) are accepted directly.
+ * @param storedUrl The storage URL returned by the repository's storeAudio
+ * @param originalUrl The original URL to fall back to if Firebase validation fails
  * @param videoId Video ID for logging
  * @returns Object with validated URL and storage status
  */
