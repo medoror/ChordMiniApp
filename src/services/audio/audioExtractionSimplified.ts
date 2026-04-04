@@ -19,7 +19,7 @@ import { detectEnvironment } from '@/utils/environmentDetection';
 import { ytDlpService } from '@/services/youtube/ytDlpService';
 import { asyncJobService } from '@/services/api/asyncJobService';
 import { YtdownIoCompatService } from '@/services/youtube/ytdownIoCompatService';
-import { validateFirebaseStorageUrl } from '@/utils/urlValidationUtils';
+import { validateFirebaseStorageUrl, isFirebaseStorageUrl } from '@/utils/urlValidationUtils';
 
 /**
  * Validate Firebase Storage URL accessibility before returning it
@@ -29,17 +29,23 @@ import { validateFirebaseStorageUrl } from '@/utils/urlValidationUtils';
  * @returns Object with validated URL and storage status
  */
 async function validateAndReturnUrl(
-  firebaseUrl: string,
+  storedUrl: string,
   originalUrl: string,
   videoId: string
 ): Promise<{ url: string; isStorageUrl: boolean }> {
-  console.log(`🔍 Validating Firebase Storage URL accessibility for ${videoId}...`);
+  // Non-Firebase storage URLs (e.g. /api/audio/{videoId} for Postgres backend)
+  // are served by our own route handler and don't require Firebase validation.
+  if (!isFirebaseStorageUrl(storedUrl)) {
+    console.log(`✅ Non-Firebase storage URL accepted without validation for ${videoId}: ${storedUrl}`);
+    return { url: storedUrl, isStorageUrl: true };
+  }
 
-  const validation = await validateFirebaseStorageUrl(firebaseUrl, 15000, 3);
+  console.log(`🔍 Validating Firebase Storage URL accessibility for ${videoId}...`);
+  const validation = await validateFirebaseStorageUrl(storedUrl, 15000, 3);
 
   if (validation.isAccessible) {
     console.log(`✅ Firebase Storage URL validated and accessible for ${videoId}`);
-    return { url: firebaseUrl, isStorageUrl: true };
+    return { url: storedUrl, isStorageUrl: true };
   } else {
     console.log(`⚠️ Firebase Storage URL not accessible for ${videoId}: ${validation.error}`);
     console.log(`🔄 Falling back to original URL: ${originalUrl}`);
