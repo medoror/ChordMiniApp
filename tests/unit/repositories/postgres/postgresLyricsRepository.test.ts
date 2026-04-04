@@ -35,6 +35,7 @@ describe('PostgresLyricsRepository', () => {
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });
     await repo.setLyrics('v1', LYRICS);
     expect(mockQuery.mock.calls[0][0]).toMatch(/INSERT INTO lyrics/);
+    expect(mockQuery.mock.calls[0][0]).toMatch(/ON CONFLICT.*DO UPDATE/s);
     expect(mockQuery.mock.calls[0][1]![0]).toBe('v1');
     expect(mockQuery.mock.calls[0][1]![1]).toBe(JSON.stringify(LYRICS));
   });
@@ -54,6 +55,7 @@ describe('PostgresLyricsRepository', () => {
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });
     await repo.setTranslation('cache-key-es', TRANSLATION);
     expect(mockQuery.mock.calls[0][0]).toMatch(/INSERT INTO translations/);
+    expect(mockQuery.mock.calls[0][0]).toMatch(/ON CONFLICT.*DO UPDATE/s);
     expect(mockQuery.mock.calls[0][1]![0]).toBe('cache-key-es');
     expect(mockQuery.mock.calls[0][1]![1]).toBe('v1');
     expect(mockQuery.mock.calls[0][1]![2]).toBe(JSON.stringify(TRANSLATION));
