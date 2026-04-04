@@ -3,7 +3,7 @@ import type { IAudioRepository } from './IAudioRepository';
 import type { IJobRepository } from './IJobRepository';
 import type { ILyricsRepository } from './ILyricsRepository';
 
-type Backend = 'firebase';
+type Backend = 'firebase' | 'postgres';
 const backend = (process.env.STORAGE_BACKEND ?? 'firebase') as Backend;
 
 function createBackend() {
@@ -20,7 +20,19 @@ function createBackend() {
       lyrics: new FirebaseLyricsRepository() as ILyricsRepository,
     };
   }
-  throw new Error(`Unknown STORAGE_BACKEND: "${backend}". Valid values: firebase`);
+  if (backend === 'postgres') {
+    const { PostgresTranscriptionRepository } = require('./postgres/PostgresTranscriptionRepository');
+    const { PostgresAudioRepository } = require('./postgres/PostgresAudioRepository');
+    const { PostgresJobRepository } = require('./postgres/PostgresJobRepository');
+    const { PostgresLyricsRepository } = require('./postgres/PostgresLyricsRepository');
+    return {
+      transcriptions: new PostgresTranscriptionRepository() as ITranscriptionRepository,
+      audio: new PostgresAudioRepository() as IAudioRepository,
+      jobs: new PostgresJobRepository() as IJobRepository,
+      lyrics: new PostgresLyricsRepository() as ILyricsRepository,
+    };
+  }
+  throw new Error(`Unknown STORAGE_BACKEND: "${backend}". Valid values: firebase, postgres`);
 }
 
 // Lazily created once on first access
