@@ -11,6 +11,9 @@ export class PostgresTranscriptionRepository implements ITranscriptionRepository
     beatModel: string,
     chordModel: string
   ): Promise<TranscriptionData | null> {
+    // Note: the returned object has no `createdAt` field (it is not stored in JSONB).
+    // TranscriptionData.createdAt is a Firestore Timestamp; the Postgres backend omits it.
+    // Callers must not rely on `result.createdAt` being present.
     const { rows } = await query<{ data: TranscriptionData }>(
       'SELECT data FROM transcriptions WHERE video_id = $1 AND beat_model = $2 AND chord_model = $3',
       [videoId, beatModel, chordModel]

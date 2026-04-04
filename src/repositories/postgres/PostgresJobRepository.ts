@@ -124,6 +124,9 @@ export class PostgresJobRepository implements IJobRepository {
   async cleanupStaleJobs(
     options?: { limit?: number }
   ): Promise<{ deletedCount: number; scannedCount: number; staleJobIds: string[] }> {
+    // Note: scannedCount === deletedCount here because the SQL pre-filters to only stale rows.
+    // The Firebase implementation scans all jobs and checks staleness per-document, so its
+    // scannedCount can exceed deletedCount. Both semantics satisfy the interface contract.
     const now = Date.now();
     const limit = options?.limit ?? 100;
     const { rows } = await query<{ job_id: string }>(
