@@ -20,4 +20,8 @@ export class FirebaseAudioRepository implements IAudioRepository {
   async audioExists(videoId: string): Promise<boolean> {
     return firebaseStorageSimplified.isAudioCached(videoId);
   }
+
+  async getAudio(_videoId: string): Promise<Buffer | null> {
+    return null;
+  }
 }

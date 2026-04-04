@@ -18,6 +18,10 @@ export function runAudioRepositoryContractTests(buildRepo: () => IAudioRepositor
   it('should_report_audio_does_not_exist_when_missing', async () => {
     expect(await repo.audioExists('notfound')).toBe(false);
   });
+
+  it('should_return_null_from_getAudio_when_not_stored', async () => {
+    expect(await repo.getAudio('notfound')).toBeNull();
+  });
 }
 
 describe('IAudioRepository contract suite', () => {

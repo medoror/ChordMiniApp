@@ -18,4 +18,10 @@ export interface IAudioRepository {
 
   /** Returns true if audio has been stored for this videoId. */
   audioExists(videoId: string): Promise<boolean>;
+
+  /**
+   * Retrieve raw audio bytes for a videoId.
+   * Returns null if no bytes have been stored (e.g., Firebase backend does not store bytes locally).
+   */
+  getAudio(videoId: string): Promise<Buffer | null>;
 }

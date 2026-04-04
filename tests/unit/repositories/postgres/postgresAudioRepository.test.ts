@@ -33,10 +33,10 @@ describe('PostgresAudioRepository', () => {
     expect(mockQuery.mock.calls[0][1]![1]).toBe(JSON.stringify(data));
   });
 
-  it('should_return_synthetic_url_on_storeAudio', async () => {
+  it('should_return_api_audio_url_on_storeAudio', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });
     const url = await repo.storeAudio('v1', new ArrayBuffer(4));
-    expect(url).toBe('db://audio/v1');
+    expect(url).toBe('/api/audio/v1');
     expect(mockQuery.mock.calls[0][1]![0]).toBe('v1');
     expect(Buffer.isBuffer(mockQuery.mock.calls[0][1]![1])).toBe(true);
   });
@@ -49,5 +49,18 @@ describe('PostgresAudioRepository', () => {
   it('should_return_true_when_audio_exists', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [{ exists: true }], rowCount: 1 });
     expect(await repo.audioExists('v1')).toBe(true);
+  });
+
+  it('should_return_null_when_getAudio_finds_no_row', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+    expect(await repo.getAudio('v1')).toBeNull();
+  });
+
+  it('should_return_buffer_when_getAudio_finds_audio_data', async () => {
+    const fakeBuffer = Buffer.from([1, 2, 3]);
+    mockQuery.mockResolvedValueOnce({ rows: [{ audio_data: fakeBuffer }], rowCount: 1 });
+    const result = await repo.getAudio('v1');
+    expect(Buffer.isBuffer(result)).toBe(true);
+    expect(result).toEqual(fakeBuffer);
   });
 });

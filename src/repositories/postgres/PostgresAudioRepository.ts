@@ -38,7 +38,7 @@ export class PostgresAudioRepository implements IAudioRepository {
        ON CONFLICT (video_id) DO UPDATE SET audio_data = EXCLUDED.audio_data`,
       [videoId, buffer]
     );
-    return `db://audio/${videoId}`;
+    return `/api/audio/${videoId}`;
   }
 
   async audioExists(videoId: string): Promise<boolean> {
@@ -49,5 +49,13 @@ export class PostgresAudioRepository implements IAudioRepository {
       [videoId]
     );
     return rows[0]?.exists ?? false;
+  }
+
+  async getAudio(videoId: string): Promise<Buffer | null> {
+    const { rows } = await query<{ audio_data: Buffer }>(
+      'SELECT audio_data FROM audio_files WHERE video_id = $1 AND audio_data IS NOT NULL',
+      [videoId]
+    );
+    return rows[0]?.audio_data ?? null;
   }
 }
