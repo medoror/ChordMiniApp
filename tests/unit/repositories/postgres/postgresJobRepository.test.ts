@@ -49,12 +49,14 @@ describe('PostgresJobRepository', () => {
   });
 
   it('should_call_update_query_on_updateJob', async () => {
+    const beforeUpdate = Date.now();
     mockQuery.mockResolvedValueOnce({ rows: [{ data: SAMPLE_JOB }], rowCount: 1 });
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });
     await repo.updateJob('seg_1_uuid', { status: 'processing' });
     expect(mockQuery.mock.calls[1][0]).toMatch(/UPDATE segmentation_jobs/);
     const written = JSON.parse(mockQuery.mock.calls[1][1]![1] as string);
     expect(written.status).toBe('processing');
+    expect(written.updatedAtMs).toBeGreaterThanOrEqual(beforeUpdate);
   });
 
   it('should_return_null_when_findJobByHash_finds_nothing', async () => {

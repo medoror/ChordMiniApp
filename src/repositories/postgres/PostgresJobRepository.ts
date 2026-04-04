@@ -53,8 +53,8 @@ export class PostgresJobRepository implements IJobRepository {
       [jobId]
     );
     if (!rows[0]) return;
-    const merged: SegmentationJobDocument = { ...rows[0].data, ...update };
     const now = Date.now();
+    const merged: SegmentationJobDocument = { ...rows[0].data, ...update, updatedAtMs: now };
     await query(
       `UPDATE segmentation_jobs
        SET data = $2,
