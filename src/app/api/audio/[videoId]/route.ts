@@ -14,7 +14,7 @@ export async function GET(
       return NextResponse.json({ error: 'Audio not found' }, { status: 404 });
     }
 
-    return new NextResponse(audioBuffer, {
+    return new NextResponse(audioBuffer as unknown as BodyInit, {
       status: 200,
       headers: {
         'Content-Type': 'audio/mpeg',
