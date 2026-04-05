@@ -38,7 +38,7 @@ export class PostgresAudioRepository implements IAudioRepository {
        ON CONFLICT (video_id) DO UPDATE SET audio_data = EXCLUDED.audio_data`,
       [videoId, buffer]
     );
-    const baseUrl = process.env.APP_BASE_URL ?? 'http://localhost:3000';
+    const baseUrl = (process.env.APP_BASE_URL ?? 'http://localhost:3000').replace(/\/+$/, '');
     return `${baseUrl}/api/audio/${videoId}`;
   }
 

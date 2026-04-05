@@ -52,6 +52,13 @@ describe('PostgresAudioRepository', () => {
     expect(Buffer.isBuffer(mockQuery.mock.calls[0][1]![1])).toBe(true);
   });
 
+  it('should_strip_trailing_slash_from_APP_BASE_URL', async () => {
+    process.env.APP_BASE_URL = 'http://test-app:3000/';
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });
+    const url = await repo.storeAudio('v1', new ArrayBuffer(4));
+    expect(url).toBe('http://test-app:3000/api/audio/v1');
+  });
+
   it('should_default_to_localhost_3000_when_APP_BASE_URL_not_set', async () => {
     delete process.env.APP_BASE_URL;
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });
