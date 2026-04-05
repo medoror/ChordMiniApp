@@ -22,8 +22,9 @@ export class PostgresAudioRepository implements IAudioRepository {
   }
 
   /**
-   * Stores audio bytes in the database and returns an HTTP-accessible URL.
-   * The URL /api/audio/{videoId} is served by the Next.js route GET /api/audio/[videoId].
+   * Stores audio bytes in the database and returns an HTTP-accessible absolute URL.
+   * The URL is built from APP_BASE_URL (default: http://localhost:3000) so that
+   * server-side consumers (e.g. the Python ML backend) can fetch the audio over HTTP.
    */
   async storeAudio(
     videoId: string,
@@ -37,7 +38,8 @@ export class PostgresAudioRepository implements IAudioRepository {
        ON CONFLICT (video_id) DO UPDATE SET audio_data = EXCLUDED.audio_data`,
       [videoId, buffer]
     );
-    return `/api/audio/${videoId}`;
+    const baseUrl = process.env.APP_BASE_URL ?? 'http://localhost:3000';
+    return `${baseUrl}/api/audio/${videoId}`;
   }
 
   async audioExists(videoId: string): Promise<boolean> {
