@@ -180,9 +180,11 @@ export async function GET(request: NextRequest) {
         'us.archive.org' // Internet Archive CDN
       ];
 
-      // Allow localhost URLs in development environment
+      // Allow localhost when in development or using Postgres backend
+      // (Postgres audio URLs point to our own /api/audio route)
       const isDevelopment = process.env.NODE_ENV === 'development';
-      if (isDevelopment) {
+      const isPostgresBackend = process.env.STORAGE_BACKEND === 'postgres';
+      if (isDevelopment || isPostgresBackend) {
         allowedDomains.push('localhost', '127.0.0.1');
       }
 
@@ -457,7 +459,8 @@ export async function HEAD(request: NextRequest) {
         'us.archive.org' // Internet Archive CDN
       ];
       const isDevelopment = process.env.NODE_ENV === 'development';
-      if (isDevelopment) allowedDomains.push('localhost','127.0.0.1');
+      const isPostgresBackend = process.env.STORAGE_BACKEND === 'postgres';
+      if (isDevelopment || isPostgresBackend) allowedDomains.push('localhost','127.0.0.1');
       if (!allowedDomains.some(domain => url.hostname.endsWith(domain))) {
         return new NextResponse(null, { status: 403 });
       }

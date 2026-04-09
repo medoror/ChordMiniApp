@@ -79,6 +79,11 @@ export async function POST(request: NextRequest) {
         'ytcontent.net' // ytdown CDN domain
       ];
       
+      // Allow localhost for Postgres backend (audio URLs point to our own /api/audio route)
+      if (process.env.STORAGE_BACKEND === 'postgres' || process.env.NODE_ENV === 'development') {
+        allowedDomains.push('localhost', '127.0.0.1');
+      }
+
       if (!allowedDomains.some(domain => url.hostname.endsWith(domain))) {
         return NextResponse.json(
           { success: false, error: 'URL domain not allowed' },
