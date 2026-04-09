@@ -1,3 +1,5 @@
+import 'server-only';
+
 import type { ITranscriptionRepository } from './ITranscriptionRepository';
 import type { IAudioRepository } from './IAudioRepository';
 import type { IJobRepository } from './IJobRepository';

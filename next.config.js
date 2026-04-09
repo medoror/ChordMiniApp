@@ -90,15 +90,8 @@ const nextConfig = {
     // browser bundle — where these code paths are never actually executed.
     resolveAlias: {
       // Alias server-only packages to an empty stub for the client (browser)
-      // bundle. These packages are listed in serverExternalPackages so Turbopack
-      // never bundles them for the server — the alias only takes effect in the
-      // client bundle where these packages must not be executed.
-      //
-      // Aliasing the packages themselves (not the Node.js built-ins) avoids
-      // breaking server-side packages that legitimately import node:net,
-      // node:http2, etc. at runtime.
-      pg: './src/lib/browser-noop.js',
-      'pg-native': './src/lib/browser-noop.js',
+      // bundle. These packages have no client-side guard at their import sites
+      // so they need aliasing here to avoid bundling errors.
       'google-auth-library': './src/lib/browser-noop.js',
       'firebase-admin': './src/lib/browser-noop.js',
     },
@@ -365,8 +358,6 @@ const nextConfig = {
     if (!isServer) {
       config.resolve.alias = {
         ...config.resolve.alias,
-        pg: false,
-        'pg-native': false,
         'google-auth-library': false,
         'firebase-admin': false,
       };
