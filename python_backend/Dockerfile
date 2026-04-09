@@ -38,8 +38,11 @@ RUN grep -v '^spleeter==' requirements.txt | grep -v '^typer==' > requirements_n
 FROM python:3.10-slim as runtime
 
 # Install only runtime system dependencies
+# git is included so we can clone model submodules that weren't checked out on
+# the host (e.g. when building from a git worktree where submodules are empty)
 RUN apt-get update && apt-get install -y \
     curl \
+    git \
     libsndfile1 \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/* \
@@ -67,7 +70,21 @@ COPY error_handlers.py .
 COPY compat/ compat/
 # Ensure legacy scipy_patch.py is not present (use compat/ patches instead)
 RUN rm -f /app/scipy_patch.py || true
-# Note: BTC models and large Beat-Transformer files excluded via .dockerignore to reduce container size
+
+# Ensure Beat-Transformer submodule code is present.
+# If the host build context had an uninitialised submodule (empty directory),
+# clone it here so gunicorn can import DilatedTransformer at startup.
+# --depth 1 keeps the layer small; --filter=blob:none skips large data files.
+RUN if [ ! -f models/Beat-Transformer/code/DilatedTransformer.py ]; then \
+      echo "Beat-Transformer code not found — cloning from upstream..." && \
+      rm -rf models/Beat-Transformer && \
+      git clone --depth 1 --filter=blob:none \
+        https://github.com/ptnghia-j/beat-transformer-model.git \
+        models/Beat-Transformer && \
+      echo "Beat-Transformer cloned successfully"; \
+    else \
+      echo "Beat-Transformer code already present — skipping clone"; \
+    fi
 
 # Create non-root user for security BEFORE downloading models
 RUN useradd --create-home --shell /bin/bash --uid 1001 app \
