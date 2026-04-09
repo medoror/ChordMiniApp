@@ -86,6 +86,17 @@ RUN if [ ! -f models/Beat-Transformer/code/DilatedTransformer.py ]; then \
       echo "Beat-Transformer code already present — skipping clone"; \
     fi
 
+RUN if [ ! -f models/Chord-CNN-LSTM/chord_recognition.py ]; then \
+      echo "Chord-CNN-LSTM code not found — cloning from upstream..." && \
+      rm -rf models/Chord-CNN-LSTM && \
+      git clone --depth 1 --filter=blob:none \
+        https://github.com/ptnghia-j/chord-cnn-lstm-model.git \
+        models/Chord-CNN-LSTM && \
+      echo "Chord-CNN-LSTM cloned successfully"; \
+    else \
+      echo "Chord-CNN-LSTM code already present — skipping clone"; \
+    fi
+
 # Create non-root user for security BEFORE downloading models
 RUN useradd --create-home --shell /bin/bash --uid 1001 app \
     && chown -R app:app /app
