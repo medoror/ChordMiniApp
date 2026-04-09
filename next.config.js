@@ -49,13 +49,16 @@ const nextConfig = {
   // renderer. These contain native add-ons or Node.js-only APIs and must be
   // resolved at runtime rather than bundled.
   //   @music.ai/sdk  – broken import for ../build.json that fails with Turbopack
-  //   pg / pg-native – Node.js TCP/DNS networking (cannot run in browser)
   //   google-auth-library – uses child_process, fs (Node.js only)
   //   firebase-admin – depends on google-auth-library (Node.js only)
+  //
+  // NOTE: pg/pg-native are intentionally NOT listed here. Listing them causes
+  // Turbopack to wrap them with async module loading (e.y()), which cascades
+  // through db.ts → Postgres repositories, making constructors undefined at
+  // runtime. Since repositories/index.ts is server-only, pg never reaches the
+  // client bundle, so there is no need to mark it as an external.
   serverExternalPackages: [
     '@music.ai/sdk',
-    'pg',
-    'pg-native',
     'google-auth-library',
     'firebase-admin',
   ],

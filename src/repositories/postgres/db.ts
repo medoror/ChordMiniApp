@@ -1,4 +1,8 @@
-import { Pool } from 'pg';
+// Use require() instead of ESM import to avoid Turbopack's async ESM→CJS
+// interop wrapper, which makes this module async and causes constructors in
+// the dependent Postgres repository classes to be undefined at call time.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { Pool } = require('pg') as typeof import('pg');
 
 if (!process.env.DATABASE_URL && process.env.STORAGE_BACKEND === 'postgres') {
   throw new Error('DATABASE_URL environment variable is required when STORAGE_BACKEND=postgres');
