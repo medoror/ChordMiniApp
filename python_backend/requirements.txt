@@ -5,6 +5,9 @@
 # python should be 3.10.16
 # ============================================================================
 
+# setuptools<70 required: newer versions dropped pkg_resources which librosa needs
+setuptools<70
+
 # Core Python dependencies (Updated to match local environment)
 numpy==1.26.4
 numba==0.59.1
