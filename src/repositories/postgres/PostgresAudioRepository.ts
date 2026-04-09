@@ -23,8 +23,10 @@ export class PostgresAudioRepository implements IAudioRepository {
 
   /**
    * Stores audio bytes in the database and returns an HTTP-accessible absolute URL.
-   * The URL is built from APP_BASE_URL (default: http://localhost:3000) so that
-   * server-side consumers (e.g. the Python ML backend) can fetch the audio over HTTP.
+   * Uses NEXT_PUBLIC_BASE_URL (the browser-facing origin) so the returned URL is
+   * resolvable by both the browser and server-side Next.js code. APP_BASE_URL is
+   * intentionally NOT used here: it points to the Docker-internal hostname
+   * (e.g. http://frontend:3000) which is unreachable from the browser.
    */
   async storeAudio(
     videoId: string,
@@ -38,7 +40,7 @@ export class PostgresAudioRepository implements IAudioRepository {
        ON CONFLICT (video_id) DO UPDATE SET audio_data = EXCLUDED.audio_data`,
       [videoId, buffer]
     );
-    const baseUrl = (process.env.APP_BASE_URL ?? 'http://localhost:3000').replace(/\/+$/, '');
+    const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000').replace(/\/+$/, '');
     return `${baseUrl}/api/audio/${videoId}`;
   }
 
