@@ -1,5 +1,4 @@
 import { analyzeAudioWithRateLimit, AnalysisResult, ChordDetectorType } from '@/services/chord-analysis/chordRecognitionService';
-import { repositories } from '@/repositories';
 import type { TranscriptionData } from '@/repositories/ITranscriptionRepository';
 
 // Define error types for better type safety
@@ -112,7 +111,11 @@ export class AudioProcessingService {
 
       const cachedData = hasPrefetchedTranscription
         ? options?.prefetchedTranscription ?? null
-        : await repositories.transcriptions.get(videoId, beatDetector, chordDetector);
+        : await (async () => {
+            const cacheRes = await fetch(`/api/analysis-cache?videoId=${encodeURIComponent(videoId)}&beatModel=${encodeURIComponent(beatDetector)}&chordModel=${encodeURIComponent(chordDetector)}`);
+            const cacheJson = await cacheRes.json();
+            return cacheJson.data ?? null;
+          })();
 
       if (cachedData) {
         // Cache found - loading cached results
@@ -157,7 +160,11 @@ export class AudioProcessingService {
         timestamp: new Date()
       };
 
-      await repositories.transcriptions.set(transcriptionData);
+      await fetch('/api/analysis-cache', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(transcriptionData),
+      });
       options?.onTranscriptionSaved?.(transcriptionData);
 
       return analysisResults;

@@ -6,9 +6,7 @@ import {
   extractAudioFromYouTube as extractAudioFromYouTubeService,
   handleAudioAnalysis as handleAudioAnalysisService,
 } from '@/services/audio/audioProcessingExtracted';
-import { repositories } from '@/repositories';
 import type { TranscriptionData } from '@/repositories/ITranscriptionRepository';
-import type { TranscriptionEnrichmentUpdate } from '@/repositories/ITranscriptionRepository';
 import { ProcessingStage } from '@/contexts/ProcessingContext';
 import { LyricsData } from '@/types/musicAiTypes';
 
@@ -311,7 +309,9 @@ export function useAnalyzePageOrchestrator({
       return transcriptionSnapshotsRef.current[snapshotKey] ?? null;
     }
 
-    const snapshot = await repositories.transcriptions.get(videoId, snapshotBeatDetector, snapshotChordDetector);
+    const cacheRes = await fetch(`/api/analysis-cache?videoId=${encodeURIComponent(videoId)}&beatModel=${encodeURIComponent(snapshotBeatDetector)}&chordModel=${encodeURIComponent(snapshotChordDetector)}`);
+    const cacheJson = await cacheRes.json();
+    const snapshot = cacheJson.data ?? null;
     transcriptionSnapshotsRef.current[snapshotKey] = snapshot;
     return snapshot;
   }, [beatDetector, chordDetector, videoId]);
@@ -557,7 +557,9 @@ export function useAnalyzePageOrchestrator({
     try {
       setInitialCacheCheckDone(true);
 
-      const cachedAudio = await repositories.audio.getMetadata(videoId);
+      const metaRes = await fetch(`/api/audio-metadata?videoId=${encodeURIComponent(videoId)}`);
+      const metaJson = await metaRes.json();
+      const cachedAudio = metaJson.metadata ?? null;
 
       if (cachedAudio) {
         setStage('idle');
@@ -824,20 +826,25 @@ export function useAnalyzePageOrchestrator({
         if (result.primaryKey && result.primaryKey !== 'Unknown') {
           const cachedTranscription = await loadTranscriptionSnapshot(beatDetector, chordDetector);
           if (cachedTranscription) {
-            const updateSucceeded = await repositories.transcriptions.updateEnrichment(
-              videoId,
-              beatDetector,
-              chordDetector,
-              {
-                keySignature: result.primaryKey,
-                keyModulation: result.modulation,
-                chordCorrections: effectiveChordCorrections,
-                sequenceCorrections: effectiveSequenceCorrections,
-                correctedChords: effectiveSequenceCorrections?.correctedSequence ?? null,
-                originalChords: effectiveSequenceCorrections?.originalSequence ?? null,
-                romanNumerals: result.romanNumerals || null,
-              }
-            );
+            await fetch('/api/analysis-cache/enrich', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                videoId,
+                beatModel: beatDetector,
+                chordModel: chordDetector,
+                enrichment: {
+                  keySignature: result.primaryKey,
+                  keyModulation: result.modulation,
+                  chordCorrections: effectiveChordCorrections,
+                  sequenceCorrections: effectiveSequenceCorrections,
+                  correctedChords: effectiveSequenceCorrections?.correctedSequence ?? null,
+                  originalChords: effectiveSequenceCorrections?.originalSequence ?? null,
+                  romanNumerals: result.romanNumerals || null,
+                },
+              }),
+            });
+            const updateSucceeded = true; // optimistic — fire and forget
 
             if (updateSucceeded) {
               setTranscriptionSnapshot({

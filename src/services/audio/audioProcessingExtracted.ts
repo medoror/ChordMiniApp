@@ -1,5 +1,4 @@
 import { AnalyzeAudioFileOptions } from '@/services/audio/audioProcessingService';
-import { repositories } from '@/repositories';
 import type { TranscriptionData } from '@/repositories/ITranscriptionRepository';
 import { apiPost } from '@/config/api';
 import { LyricsData } from '@/types/musicAiTypes';
@@ -145,9 +144,13 @@ export const handleAudioAnalysis = async (deps: AudioProcessingServiceDependenci
   let cachedData: TranscriptionData | Omit<TranscriptionData, 'createdAt'> | null = null;
 
   try {
-    cachedData = deps.loadTranscriptionSnapshot
-      ? await deps.loadTranscriptionSnapshot(currentBeatDetector, currentChordDetector)
-      : await repositories.transcriptions.get(videoId, currentBeatDetector, currentChordDetector);
+    if (deps.loadTranscriptionSnapshot) {
+      cachedData = await deps.loadTranscriptionSnapshot(currentBeatDetector, currentChordDetector);
+    } else {
+      const cacheRes = await fetch(`/api/analysis-cache?videoId=${encodeURIComponent(videoId)}&beatModel=${encodeURIComponent(currentBeatDetector)}&chordModel=${encodeURIComponent(currentChordDetector)}`);
+      const cacheJson = await cacheRes.json();
+      cachedData = cacheJson.data ?? null;
+    }
 
     if (cachedData) {
       deps.setTranscriptionSnapshot?.(cachedData);
