@@ -1,13 +1,44 @@
 # ChordMiniApp Docker Compose Configuration
 # For local development and testing
+#
+# Quick Start:
+#   1. Copy ../.env.docker.example to ../.env.docker and fill in your values
+#   2. Run from the repo root:
+#      docker compose -f docker/docker-compose.dev.yml --env-file .env.docker up -d
+#   3. Access: http://localhost:3000
+#
+# The Postgres schema is applied automatically on first start.
 
 version: '3.8'
 
 services:
+  # Postgres - Storage backend (replaces Firebase for caching)
+  postgres:
+    image: postgres:16-alpine
+    container_name: chordmini-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-chordmini}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-chordmini}
+      POSTGRES_DB: ${POSTGRES_DB:-chordmini}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ../db/migrations/001_initial_schema.sql:/docker-entrypoint-initdb.d/001_initial_schema.sql:ro
+    networks:
+      - chordmini-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-chordmini} -d ${POSTGRES_DB:-chordmini}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
   # Frontend - Next.js Application
   frontend:
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile
       target: runner
     container_name: chordmini-frontend
@@ -20,8 +51,14 @@ services:
       - NEXT_TELEMETRY_DISABLED=1
       - PORT=3000
       - HOSTNAME=0.0.0.0
+      # Postgres storage backend
+      - STORAGE_BACKEND=${STORAGE_BACKEND:-postgres}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-chordmini}:${POSTGRES_PASSWORD:-chordmini}@postgres:5432/${POSTGRES_DB:-chordmini}
+      - APP_BASE_URL=${APP_BASE_URL:-http://frontend:3000}
     depends_on:
       backend:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
     networks:
       - chordmini-network
@@ -36,7 +73,7 @@ services:
   # Backend - Python Flask ML Service
   backend:
     build:
-      context: ./python_backend
+      context: ../python_backend
       dockerfile: Dockerfile
       target: runtime
     container_name: chordmini-backend
@@ -104,6 +141,9 @@ networks:
     name: chordmini-network
 
 volumes:
+  postgres-data:
+    name: chordmini-postgres-data
+    driver: local
   backend-cache:
     name: chordmini-backend-cache
     driver: local

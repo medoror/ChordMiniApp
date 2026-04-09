@@ -45,9 +45,20 @@ const nextConfig = {
   // Enable standalone output for Docker deployments
   output: 'standalone',
 
-  // Server external packages - packages that should not be bundled
-  // @music.ai/sdk has a broken import for ../build.json that fails with Turbopack
-  serverExternalPackages: ['@music.ai/sdk'],
+  // Server external packages - packages that should not be bundled by the server
+  // renderer. These contain native add-ons or Node.js-only APIs and must be
+  // resolved at runtime rather than bundled.
+  //   @music.ai/sdk  – broken import for ../build.json that fails with Turbopack
+  //   pg / pg-native – Node.js TCP/DNS networking (cannot run in browser)
+  //   google-auth-library – uses child_process, fs (Node.js only)
+  //   firebase-admin – depends on google-auth-library (Node.js only)
+  serverExternalPackages: [
+    '@music.ai/sdk',
+    'pg',
+    'pg-native',
+    'google-auth-library',
+    'firebase-admin',
+  ],
 
   // Transpile ES modules that need to be converted to CommonJS
   transpilePackages: [],
@@ -68,6 +79,29 @@ const nextConfig = {
   // Turbopack configuration (Next.js 16+ default bundler)
   // Empty config silences the webpack migration warning
   turbopack: {
+    // Prevent Node.js-only built-in modules from causing build errors in the
+    // client (browser) bundle. These modules are pulled into the client bundle
+    // because hooks/services that also export browser-safe functions happen to
+    // import server-only packages (pg, firebase-admin) at the top level.
+    //
+    // serverExternalPackages handles the server bundle; these aliases handle the
+    // client bundle. Because pg/firebase-admin are server externals they are
+    // never bundled on the server anyway, so the empty stub only affects the
+    // browser bundle — where these code paths are never actually executed.
+    resolveAlias: {
+      // Alias server-only packages to an empty stub for the client (browser)
+      // bundle. These packages are listed in serverExternalPackages so Turbopack
+      // never bundles them for the server — the alias only takes effect in the
+      // client bundle where these packages must not be executed.
+      //
+      // Aliasing the packages themselves (not the Node.js built-ins) avoids
+      // breaking server-side packages that legitimately import node:net,
+      // node:http2, etc. at runtime.
+      pg: './src/lib/browser-noop.js',
+      'pg-native': './src/lib/browser-noop.js',
+      'google-auth-library': './src/lib/browser-noop.js',
+      'firebase-admin': './src/lib/browser-noop.js',
+    },
     // Turbopack rules for audio files
     rules: {
       '*.mp3': {
@@ -322,6 +356,20 @@ const nextConfig = {
     } else {
       // Development source maps
       config.devtool = 'eval-source-map';
+    }
+
+    // Prevent server-only packages from causing errors in the client bundle.
+    // Mirrors the turbopack.resolveAlias entries above for webpack builds.
+    // The server uses these packages as externals (serverExternalPackages), so
+    // the alias only affects the browser bundle where they must not be executed.
+    if (!isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        pg: false,
+        'pg-native': false,
+        'google-auth-library': false,
+        'firebase-admin': false,
+      };
     }
 
     // Handle audio files
