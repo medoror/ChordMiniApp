@@ -22,6 +22,7 @@ werkzeug==3.0.3
 gunicorn==21.2.0
 python-dotenv==1.0.0
 limits==5.2.0
+redis>=4.2.0  # Required by flask-limiter for Redis storage backend
 
 # ============================================================================
 # Audio Processing Libraries
