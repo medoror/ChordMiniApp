@@ -9,16 +9,16 @@ describe('PostgresAudioRepository', () => {
   let savedBaseUrl: string | undefined;
 
   beforeEach(() => {
-    savedBaseUrl = process.env.APP_BASE_URL;
+    savedBaseUrl = process.env.NEXT_PUBLIC_BASE_URL;
     jest.clearAllMocks();
     repo = new PostgresAudioRepository();
   });
 
   afterEach(() => {
     if (savedBaseUrl === undefined) {
-      delete process.env.APP_BASE_URL;
+      delete process.env.NEXT_PUBLIC_BASE_URL;
     } else {
-      process.env.APP_BASE_URL = savedBaseUrl;
+      process.env.NEXT_PUBLIC_BASE_URL = savedBaseUrl;
     }
   });
 
@@ -43,8 +43,8 @@ describe('PostgresAudioRepository', () => {
     expect(mockQuery.mock.calls[0][1]![1]).toBe(JSON.stringify(data));
   });
 
-  it('should_return_absolute_url_on_storeAudio_using_APP_BASE_URL', async () => {
-    process.env.APP_BASE_URL = 'http://test-app:3000';
+  it('should_return_absolute_url_on_storeAudio_using_NEXT_PUBLIC_BASE_URL', async () => {
+    process.env.NEXT_PUBLIC_BASE_URL = 'http://test-app:3000';
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });
     const url = await repo.storeAudio('v1', new ArrayBuffer(4));
     expect(url).toBe('http://test-app:3000/api/audio/v1');
@@ -52,15 +52,15 @@ describe('PostgresAudioRepository', () => {
     expect(Buffer.isBuffer(mockQuery.mock.calls[0][1]![1])).toBe(true);
   });
 
-  it('should_strip_trailing_slash_from_APP_BASE_URL', async () => {
-    process.env.APP_BASE_URL = 'http://test-app:3000/';
+  it('should_strip_trailing_slash_from_NEXT_PUBLIC_BASE_URL', async () => {
+    process.env.NEXT_PUBLIC_BASE_URL = 'http://test-app:3000/';
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });
     const url = await repo.storeAudio('v1', new ArrayBuffer(4));
     expect(url).toBe('http://test-app:3000/api/audio/v1');
   });
 
-  it('should_default_to_localhost_3000_when_APP_BASE_URL_not_set', async () => {
-    delete process.env.APP_BASE_URL;
+  it('should_default_to_localhost_3000_when_NEXT_PUBLIC_BASE_URL_not_set', async () => {
+    delete process.env.NEXT_PUBLIC_BASE_URL;
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });
     const url = await repo.storeAudio('v2', new ArrayBuffer(4));
     expect(url).toBe('http://localhost:3000/api/audio/v2');
