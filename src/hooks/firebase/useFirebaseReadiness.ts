@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
+import { loadPublicConfig } from '@/config/publicConfig';
 
 /**
  * Custom hook to manage Firebase readiness state
  * Extracted from the main page component to isolate Firebase connection logic
  *
  * MIGRATION: Updated to use @/config/firebase instead of @/lib/firebase-lazy
+ * When NEXT_PUBLIC_STORAGE_BACKEND=postgres, Firebase is not needed and this
+ * hook resolves immediately so the orchestrator can proceed without Firebase.
  */
 export const useFirebaseReadiness = () => {
   const [firebaseReady, setFirebaseReady] = useState(false);
@@ -14,6 +17,16 @@ export const useFirebaseReadiness = () => {
     let retryTimeout: ReturnType<typeof setTimeout> | null = null;
 
     const checkFirebaseReady = async () => {
+      // When using Postgres backend, Firebase is not needed for storage.
+      // Resolve immediately so the orchestrator can proceed.
+      const config = await loadPublicConfig();
+      if (config.NEXT_PUBLIC_STORAGE_BACKEND === 'postgres') {
+        if (!cancelled) {
+          setFirebaseReady(true);
+        }
+        return;
+      }
+
       try {
         const { ensureFirebaseInitialized } = await import('@/config/firebase');
         const { db } = await ensureFirebaseInitialized();

@@ -55,6 +55,13 @@ services:
       - STORAGE_BACKEND=${STORAGE_BACKEND:-postgres}
       - DATABASE_URL=postgresql://${POSTGRES_USER:-chordmini}:${POSTGRES_PASSWORD:-chordmini}@postgres:5432/${POSTGRES_DB:-chordmini}
       - APP_BASE_URL=${APP_BASE_URL:-http://frontend:3000}
+      # Base URL for environment detection - tells server-side code we're on localhost
+      # so it selects yt-dlp (installed in this container) instead of external yt-mp3-go
+      - NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL:-http://localhost:3000}
+      # Explicitly enable yt-dlp strategy so the /api/ytdlp/* routes allow requests
+      - NEXT_PUBLIC_AUDIO_STRATEGY=ytdlp
+      # Expose storage backend to client so Firebase readiness check is skipped for Postgres
+      - NEXT_PUBLIC_STORAGE_BACKEND=${STORAGE_BACKEND:-postgres}
     depends_on:
       backend:
         condition: service_healthy
