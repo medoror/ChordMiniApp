@@ -668,7 +668,7 @@ export const GuitarChordsTab: React.FC<GuitarChordsTabProps> = ({
                             <span className="text-[10px] font-semibold uppercase tracking-wide text-purple-400">Baritone</span>
                             <GuitarChordDiagram
                               chordData={chordDataCache.get(chordInfo.chord) || null}
-                              positionIndex={chordPositions[chordInfo.chord] || 0}
+                              positionIndex={0}
                               size={diagramConfig.size}
                               customWidth={diagramConfig.diagramWidth}
                               customHeight={diagramConfig.diagramHeight}
@@ -761,7 +761,7 @@ export const GuitarChordsTab: React.FC<GuitarChordsTabProps> = ({
                       <span className="text-[10px] font-semibold uppercase tracking-wide text-purple-400">Baritone</span>
                       <GuitarChordDiagram
                         chordData={data}
-                        positionIndex={chordPositions[name] || 0}
+                        positionIndex={0}
                         size="medium"
                         showChordName={true}
                         className="hover:scale-105 transition-transform"

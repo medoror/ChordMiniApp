@@ -105,6 +105,43 @@ describe('GuitarChordsTab — instrument selector', () => {
   });
 });
 
+describe('GuitarChordsTab — mode switching', () => {
+  it('should_render_single_diagram_after_switching_from_duo_to_guitar', async () => {
+    render(<GuitarChordsTab {...minimalProps} />);
+    const select = screen.getByRole('combobox', { name: /instrument/i });
+
+    // Switch to duo
+    fireEvent.change(select, { target: { value: 'duo' } });
+    const duoDiagrams = await screen.findAllByTestId('chord-diagram');
+    expect(duoDiagrams.length).toBeGreaterThanOrEqual(2);
+
+    // Switch back to guitar
+    fireEvent.change(select, { target: { value: 'guitar' } });
+    // After switching, should only render one diagram per chord, not two
+    const guitarDiagrams = await screen.findAllByTestId('chord-diagram');
+    expect(guitarDiagrams.length).toBeLessThan(duoDiagrams.length);
+  });
+
+  it('should_load_both_baritone_and_standard_uke_data_in_duo_mode', async () => {
+    render(<GuitarChordsTab {...minimalProps} />);
+    const select = screen.getByRole('combobox', { name: /instrument/i });
+    fireEvent.change(select, { target: { value: 'duo' } });
+
+    // Wait for duo diagrams to render
+    await screen.findAllByTestId('chord-diagram');
+
+    // Verify both instruments' diagrams are present in the DOM
+    const baritoneRelevantDiagrams = screen.getAllByTestId('chord-diagram').filter(
+      el => el.getAttribute('data-instrument') === 'baritoneukulele'
+    );
+    const ukuleleDiagrams = screen.getAllByTestId('chord-diagram').filter(
+      el => el.getAttribute('data-instrument') === 'ukulele'
+    );
+    expect(baritoneRelevantDiagrams.length).toBeGreaterThanOrEqual(1);
+    expect(ukuleleDiagrams.length).toBeGreaterThanOrEqual(1);
+  });
+});
+
 describe('GuitarChordsTab — duo rendering', () => {
   it('should_render_two_diagrams_per_chord_in_duo_mode', async () => {
     render(<GuitarChordsTab {...minimalProps} />);
@@ -132,5 +169,33 @@ describe('GuitarChordsTab — duo rendering', () => {
       { target: { value: 'duo' } }
     );
     expect(await screen.findByText(/standard/i)).toBeInTheDocument();
+  });
+});
+
+describe('GuitarChordsTab — mode switching and data loading', () => {
+  it('should_render_single_diagram_after_switching_from_duo_to_guitar', async () => {
+    render(<GuitarChordsTab {...minimalProps} />);
+    const select = screen.getByRole('combobox', { name: /instrument/i });
+
+    fireEvent.change(select, { target: { value: 'duo' } });
+    const duoDiagrams = await screen.findAllByTestId('chord-diagram');
+    expect(duoDiagrams.length).toBeGreaterThanOrEqual(2);
+
+    fireEvent.change(select, { target: { value: 'guitar' } });
+    const guitarDiagrams = await screen.findAllByTestId('chord-diagram');
+    expect(guitarDiagrams.length).toBeLessThan(duoDiagrams.length);
+  });
+
+  it('should_render_both_baritoneukulele_and_ukulele_diagrams_in_duo_mode', async () => {
+    render(<GuitarChordsTab {...minimalProps} />);
+    fireEvent.change(
+      screen.getByRole('combobox', { name: /instrument/i }),
+      { target: { value: 'duo' } }
+    );
+
+    const diagrams = await screen.findAllByTestId('chord-diagram');
+    const instruments = diagrams.map(d => d.getAttribute('data-instrument'));
+    expect(instruments).toContain('baritoneukulele');
+    expect(instruments).toContain('ukulele');
   });
 });
