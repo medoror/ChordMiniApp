@@ -135,11 +135,12 @@ export const GuitarChordsTab: React.FC<GuitarChordsTabProps> = ({
 
   const [windowWidth, setWindowWidth] = useState<number>(typeof window !== 'undefined' ? window.innerWidth : 1024);
 
-  // Wrapped setter that clears chord data cache when capo changes (new chord shapes need to be loaded)
+  // Wrapped setter that clears chord data caches when capo changes (new chord shapes need to be loaded)
   const setCapoFret = useCallback((value: number | ((prev: number) => number)) => {
     const nextValue = typeof value === 'function' ? value(capoFret) : value;
     setSharedCapoFret(nextValue);
     setChordDataCache(new Map());
+    setUkuleleCacheMap(new Map());
   }, [capoFret, setSharedCapoFret]);
 
   // Apply pitch shift transposition to chord grid data if enabled
