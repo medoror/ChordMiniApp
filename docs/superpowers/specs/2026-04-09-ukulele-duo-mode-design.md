@@ -27,18 +27,19 @@ Direct lookup in `ukulele.json` (GCEA). No transposition. Slash chords stripped 
 
 ### Cache
 
-No change to cache key format — keys remain the chord name (e.g., `"C"`). The cache is scoped to the current mode and cleared in full on every mode change, so there is no collision between instruments. In duo mode, the chord loading loop runs twice per chord (once for baritone, once for standard uke) and stores each result under the same chord name key in two separate cache maps: `baritoneCacheMap` and `ukuleleCacheMap`. Both maps are cleared when the mode changes.
+The existing `chordDataCache` Map in `GuitarChordsTab` component state handles all single-instrument modes unchanged. For duo mode, a second `ukuleleCacheMap` is added to component state alongside it. In duo mode, the chord loading loop populates both caches — `chordDataCache` for baritone data and `ukuleleCacheMap` for standard uke data. Both are cleared when the mode changes. Keys remain the chord name (e.g., `"C"`).
 
 ## Components
 
 ### `GuitarChordDiagram`
 
-- New instrument config added:
+- New instrument config added (matches the structure of the existing configs, including `keys: []`):
   ```ts
   const STANDARD_UKE_INSTRUMENT = {
     strings: 4,
     fretsOnChord: 4,
     name: 'Ukulele',
+    keys: [],
     tunings: { standard: ['G', 'C', 'E', 'A'] }
   };
   ```
@@ -55,7 +56,9 @@ No change to cache key format — keys remain the chord name (e.g., `"C"`). The 
 
 Single-instrument modes render exactly as they do today.
 
-**Position selector in Duo mode:** The per-chord position selector (voicing picker) is hidden in Duo mode. Both diagrams render position 0 (the default voicing). This keeps the Duo card compact and avoids the complexity of two independent position selectors per chord.
+**Position selector in Duo mode:** The per-chord position selector (voicing picker) is hidden in Duo mode. Both diagrams render position 0 (the default voicing). This keeps the Duo card compact and avoids the complexity of two independent position selectors per chord. The rendering path for duo simply never renders the position selector UI — no prop change to `GuitarChordDiagram` is needed for this.
+
+**Instrument prop in Duo mode:** Each `GuitarChordDiagram` in a duo card receives its own concrete instrument value — `instrument='baritoneukulele'` for the top diagram and `instrument='ukulele'` for the bottom. The value `'duo'` is never passed to `GuitarChordDiagram`.
 
 **`instrumentMode` type:**
 ```ts
