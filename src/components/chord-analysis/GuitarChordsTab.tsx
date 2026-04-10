@@ -120,8 +120,9 @@ export const GuitarChordsTab: React.FC<GuitarChordsTabProps> = ({
   const targetKey = useTargetKey();
 
   const [viewMode, setViewMode] = useState<'animated' | 'summary'>('animated');
-  const [instrumentMode, setInstrumentMode] = useState<'guitar' | 'baritoneukulele'>('guitar');
+  const [instrumentMode, setInstrumentMode] = useState<'guitar' | 'baritoneukulele' | 'ukulele' | 'duo'>('guitar');
   const [chordDataCache, setChordDataCache] = useState<Map<string, ChordData | null>>(new Map());
+  const [ukuleleCacheMap, setUkuleleCacheMap] = useState<Map<string, ChordData | null>>(new Map());
   const [isLoadingChords, setIsLoadingChords] = useState<boolean>(false);
 
   // Shared guitar voicing state
@@ -215,6 +216,7 @@ export const GuitarChordsTab: React.FC<GuitarChordsTabProps> = ({
   // Clear chord data cache when instrument mode changes so diagrams reload
   useEffect(() => {
     setChordDataCache(new Map());
+    setUkuleleCacheMap(new Map());
   }, [instrumentMode]);
 
   // Pull analysis toggles and data from Zustand stores when not provided via props
@@ -354,34 +356,70 @@ export const GuitarChordsTab: React.FC<GuitarChordsTabProps> = ({
   useEffect(() => {
     const loadChordData = async () => {
       const chordsToLoad = new Set<string>();
+
+      // Chords missing from primary cache
       uniqueChordsForGuitarDiagrams.forEach(chord => {
         if (!chordDataCache.has(chord)) chordsToLoad.add(chord);
       });
       if (currentChordNameForCache && !chordDataCache.has(currentChordNameForCache)) {
         chordsToLoad.add(currentChordNameForCache);
       }
+
+      // In duo mode also check the ukulele cache
+      if (instrumentMode === 'duo') {
+        uniqueChordsForGuitarDiagrams.forEach(chord => {
+          if (!ukuleleCacheMap.has(chord)) chordsToLoad.add(chord);
+        });
+        if (currentChordNameForCache && !ukuleleCacheMap.has(currentChordNameForCache)) {
+          chordsToLoad.add(currentChordNameForCache);
+        }
+      }
+
       if (chordsToLoad.size > 0) {
         setIsLoadingChords(true);
         try {
           const results = await Promise.all(
-            Array.from(chordsToLoad).map(async (chord) => ({
-              chord,
-              data: instrumentMode === 'baritoneukulele'
-                ? chordMappingService.getBaritonUkeChordDataSync(chord)
-                : await chordMappingService.getChordData(chord)
-            }))
+            Array.from(chordsToLoad).map(async (chord) => {
+              let primaryData: ChordData | null;
+              let ukeData: ChordData | null = null;
+
+              if (instrumentMode === 'baritoneukulele' || instrumentMode === 'duo') {
+                primaryData = chordMappingService.getBaritonUkeChordDataSync(chord);
+              } else if (instrumentMode === 'ukulele') {
+                primaryData = chordMappingService.getUkuleleChordDataSync(chord);
+              } else {
+                primaryData = await chordMappingService.getChordData(chord);
+              }
+
+              if (instrumentMode === 'duo') {
+                ukeData = chordMappingService.getUkuleleChordDataSync(chord);
+              }
+
+              return { chord, primaryData, ukeData };
+            })
           );
+
           setChordDataCache(cache => {
-            const updatedCache = new Map(cache);
-            results.forEach(({ chord, data }) => updatedCache.set(chord, data));
-            return updatedCache;
+            const updated = new Map(cache);
+            results.forEach(({ chord, primaryData }) => updated.set(chord, primaryData));
+            return updated;
           });
-        } catch (error) { console.error('Failed to load chord data:', error); }
+
+          if (instrumentMode === 'duo') {
+            setUkuleleCacheMap(cache => {
+              const updated = new Map(cache);
+              results.forEach(({ chord, ukeData }) => updated.set(chord, ukeData ?? null));
+              return updated;
+            });
+          }
+        } catch (error) {
+          console.error('Failed to load chord data:', error);
+        }
         setIsLoadingChords(false);
       }
     };
     loadChordData();
-  }, [uniqueChordsForGuitarDiagrams, currentChordNameForCache, chordDataCache, instrumentMode]);
+  }, [uniqueChordsForGuitarDiagrams, currentChordNameForCache, chordDataCache, ukuleleCacheMap, instrumentMode]);
 
   // Unfiltered chord data for guitar diagrams (always shows all chords with consistent corrections)
   const uniqueChordDataForGuitarDiagrams = useMemo(() => {
