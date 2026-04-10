@@ -42,7 +42,7 @@ interface GuitarChordDiagramProps {
   romanNumeral?: React.ReactElement | string;
   labelClassName?: string;
   romanNumeralClassName?: string;
-  instrument?: 'guitar' | 'baritoneukulele';
+  instrument?: 'guitar' | 'baritoneukulele' | 'ukulele';
 }
 
 // Standard guitar instrument configuration
@@ -64,6 +64,17 @@ const BARITONE_UKE_INSTRUMENT = {
   keys: [],
   tunings: {
     standard: ['D', 'G', 'B', 'E']
+  }
+};
+
+// Standard ukulele instrument configuration (tuned G-C-E-A)
+const STANDARD_UKE_INSTRUMENT = {
+  strings: 4,
+  fretsOnChord: 4,
+  name: 'Ukulele',
+  keys: [],
+  tunings: {
+    standard: ['G', 'C', 'E', 'A']
   }
 };
 
@@ -270,7 +281,11 @@ const GuitarChordDiagramComponent: React.FC<GuitarChordDiagramProps> = ({
         <div className="chord-diagram-svg">
           <Chord
             chord={chordForDiagram}
-            instrument={instrument === 'baritoneukulele' ? BARITONE_UKE_INSTRUMENT : GUITAR_INSTRUMENT}
+            instrument={
+              instrument === 'baritoneukulele' ? BARITONE_UKE_INSTRUMENT :
+              instrument === 'ukulele'         ? STANDARD_UKE_INSTRUMENT :
+                                                 GUITAR_INSTRUMENT
+            }
             lite={lite}
           />
         </div>
