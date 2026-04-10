@@ -585,23 +585,23 @@ export const GuitarChordsTab: React.FC<GuitarChordsTabProps> = ({
             <div className="hidden h-6 w-px bg-gray-300 dark:bg-gray-600 sm:block" />
 
             {/* Instrument selector */}
-            <span className="text-xs font-medium text-gray-700 dark:text-gray-300 sm:text-sm">Instrument:</span>
-            <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-              <button
-                onClick={() => setInstrumentMode('guitar')}
-                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors sm:px-3 sm:py-1.5 sm:text-sm ${instrumentMode === 'guitar' ? 'bg-blue-600 text-white shadow-sm' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-                title="Guitar chord diagrams (6-string, EADGBE)"
-              >
-                Guitar
-              </button>
-              <button
-                onClick={() => setInstrumentMode('baritoneukulele')}
-                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors sm:px-3 sm:py-1.5 sm:text-sm ${instrumentMode === 'baritoneukulele' ? 'bg-blue-600 text-white shadow-sm' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-                title="Baritone ukulele chord diagrams (4-string, DGBE)"
-              >
-                Baritone Uke
-              </button>
-            </div>
+            <label
+              htmlFor="instrument-mode-select"
+              className="text-xs font-medium text-gray-700 dark:text-gray-300 sm:text-sm"
+            >
+              Instrument:
+            </label>
+            <select
+              id="instrument-mode-select"
+              value={instrumentMode}
+              onChange={(e) => setInstrumentMode(e.target.value as 'guitar' | 'baritoneukulele' | 'ukulele' | 'duo')}
+              className="rounded-lg bg-gray-100 dark:bg-gray-800 px-2.5 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 sm:px-3 sm:py-1.5 sm:text-sm border-none outline-none cursor-pointer"
+            >
+              <option value="guitar">Guitar</option>
+              <option value="baritoneukulele">Baritone Uke</option>
+              <option value="ukulele">Standard Uke</option>
+              <option value="duo">Duo</option>
+            </select>
 
             {/* Divider */}
             <div className="hidden h-6 w-px bg-gray-300 dark:bg-gray-600 sm:block" />
@@ -663,29 +663,82 @@ export const GuitarChordsTab: React.FC<GuitarChordsTabProps> = ({
                           margin: `0 ${diagramConfig.marginX}px`,
                         }}
                       >
-                        <GuitarChordDiagram
-                          chordData={chordDataCache.get(chordInfo.chord) || null}
-                          positionIndex={chordPositions[chordInfo.chord] || 0}
-                          size={diagramConfig.size}
-                          customWidth={diagramConfig.diagramWidth}
-                          customHeight={diagramConfig.diagramHeight}
-                          showChordName={true}
-                          displayName={chordInfo.chord}
-                          soundingChordName={
-                            processedChordData.soundingNameByIndex.get(chordInfo.startIndex)
-                            || processedChordData.soundingNameByShape.get(chordInfo.chord)
-                          }
-                          isFocused={chordInfo.isCurrent}
-                          segmentationColor={segmentationColor}
-                          showPositionSelector={chordInfo.isCurrent}
-                          onPositionChange={(positionIndex) => handlePositionChange(chordInfo.chord, positionIndex)}
-                          capoFret={capoFret}
-                          capoLabelMode={capoLabelMode}
-                          showRomanNumerals={false}
-                          romanNumeral=""
-                          labelClassName={diagramConfig.labelClass}
-                          instrument={instrumentMode}
-                        />
+                        {instrumentMode === 'duo' ? (
+                          <div className="flex flex-col items-center gap-1">
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-purple-400">Baritone</span>
+                            <GuitarChordDiagram
+                              chordData={chordDataCache.get(chordInfo.chord) || null}
+                              positionIndex={chordPositions[chordInfo.chord] || 0}
+                              size={diagramConfig.size}
+                              customWidth={diagramConfig.diagramWidth}
+                              customHeight={diagramConfig.diagramHeight}
+                              showChordName={true}
+                              displayName={chordInfo.chord}
+                              soundingChordName={
+                                processedChordData.soundingNameByIndex.get(chordInfo.startIndex)
+                                || processedChordData.soundingNameByShape.get(chordInfo.chord)
+                              }
+                              isFocused={chordInfo.isCurrent}
+                              segmentationColor={segmentationColor}
+                              showPositionSelector={false}
+                              onPositionChange={(positionIndex) => handlePositionChange(chordInfo.chord, positionIndex)}
+                              capoFret={capoFret}
+                              capoLabelMode={capoLabelMode}
+                              showRomanNumerals={false}
+                              romanNumeral=""
+                              labelClassName={diagramConfig.labelClass}
+                              instrument="baritoneukulele"
+                            />
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-pink-400">Standard</span>
+                            <GuitarChordDiagram
+                              chordData={ukuleleCacheMap.get(chordInfo.chord) || null}
+                              positionIndex={0}
+                              size={diagramConfig.size}
+                              customWidth={diagramConfig.diagramWidth}
+                              customHeight={diagramConfig.diagramHeight}
+                              showChordName={false}
+                              displayName={chordInfo.chord}
+                              soundingChordName={
+                                processedChordData.soundingNameByIndex.get(chordInfo.startIndex)
+                                || processedChordData.soundingNameByShape.get(chordInfo.chord)
+                              }
+                              isFocused={chordInfo.isCurrent}
+                              segmentationColor={segmentationColor}
+                              showPositionSelector={false}
+                              onPositionChange={(positionIndex) => handlePositionChange(chordInfo.chord, positionIndex)}
+                              capoFret={capoFret}
+                              capoLabelMode={capoLabelMode}
+                              showRomanNumerals={false}
+                              romanNumeral=""
+                              labelClassName={diagramConfig.labelClass}
+                              instrument="ukulele"
+                            />
+                          </div>
+                        ) : (
+                          <GuitarChordDiagram
+                            chordData={chordDataCache.get(chordInfo.chord) || null}
+                            positionIndex={chordPositions[chordInfo.chord] || 0}
+                            size={diagramConfig.size}
+                            customWidth={diagramConfig.diagramWidth}
+                            customHeight={diagramConfig.diagramHeight}
+                            showChordName={true}
+                            displayName={chordInfo.chord}
+                            soundingChordName={
+                              processedChordData.soundingNameByIndex.get(chordInfo.startIndex)
+                              || processedChordData.soundingNameByShape.get(chordInfo.chord)
+                            }
+                            isFocused={chordInfo.isCurrent}
+                            segmentationColor={segmentationColor}
+                            showPositionSelector={chordInfo.isCurrent}
+                            onPositionChange={(positionIndex) => handlePositionChange(chordInfo.chord, positionIndex)}
+                            capoFret={capoFret}
+                            capoLabelMode={capoLabelMode}
+                            showRomanNumerals={false}
+                            romanNumeral=""
+                            labelClassName={diagramConfig.labelClass}
+                            instrument={instrumentMode as 'guitar' | 'baritoneukulele' | 'ukulele'}
+                          />
+                        )}
                       </motion.div>
                     );
                   })}
@@ -697,27 +750,70 @@ export const GuitarChordsTab: React.FC<GuitarChordsTabProps> = ({
             <h3 className="mb-4 text-center text-base font-medium text-gray-700 dark:text-gray-300 sm:mb-6 sm:text-lg">
               All Chords in Song ({uniqueChordsForGuitarDiagrams.length} unique)
               {instrumentMode === 'baritoneukulele' && <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">— Baritone Ukulele</span>}
+              {instrumentMode === 'ukulele' && <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">— Standard Ukulele</span>}
+              {instrumentMode === 'duo' && <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">— Baritone + Standard Ukulele</span>}
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-4 md:gap-6 justify-items-center">
               {uniqueChordDataForGuitarDiagrams.map(({name, data}, index) => (
                 <div key={index} className="flex justify-center">
-                  <GuitarChordDiagram
-                    chordData={data}
-                    positionIndex={chordPositions[name] || 0}
-                    size="medium"
-                    showChordName={true}
-                    className="hover:scale-105 transition-transform"
-                    displayName={name}
-                    soundingChordName={processedChordData.soundingNameByShape.get(name)}
-                    isFocused={false}
-                    showPositionSelector={true}
-                    onPositionChange={(positionIndex) => handlePositionChange(name, positionIndex)}
-                    capoFret={capoFret}
-                    capoLabelMode={capoLabelMode}
-                    showRomanNumerals={false}
-                    romanNumeral=""
-                    instrument={instrumentMode}
-                  />
+                  {instrumentMode === 'duo' ? (
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-purple-400">Baritone</span>
+                      <GuitarChordDiagram
+                        chordData={data}
+                        positionIndex={chordPositions[name] || 0}
+                        size="medium"
+                        showChordName={true}
+                        className="hover:scale-105 transition-transform"
+                        displayName={name}
+                        soundingChordName={processedChordData.soundingNameByShape.get(name)}
+                        isFocused={false}
+                        showPositionSelector={false}
+                        onPositionChange={(positionIndex) => handlePositionChange(name, positionIndex)}
+                        capoFret={capoFret}
+                        capoLabelMode={capoLabelMode}
+                        showRomanNumerals={false}
+                        romanNumeral=""
+                        instrument="baritoneukulele"
+                      />
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-pink-400">Standard</span>
+                      <GuitarChordDiagram
+                        chordData={ukuleleCacheMap.get(name) || null}
+                        positionIndex={0}
+                        size="medium"
+                        showChordName={false}
+                        className="hover:scale-105 transition-transform"
+                        displayName={name}
+                        soundingChordName={processedChordData.soundingNameByShape.get(name)}
+                        isFocused={false}
+                        showPositionSelector={false}
+                        onPositionChange={(positionIndex) => handlePositionChange(name, positionIndex)}
+                        capoFret={capoFret}
+                        capoLabelMode={capoLabelMode}
+                        showRomanNumerals={false}
+                        romanNumeral=""
+                        instrument="ukulele"
+                      />
+                    </div>
+                  ) : (
+                    <GuitarChordDiagram
+                      chordData={data}
+                      positionIndex={chordPositions[name] || 0}
+                      size="medium"
+                      showChordName={true}
+                      className="hover:scale-105 transition-transform"
+                      displayName={name}
+                      soundingChordName={processedChordData.soundingNameByShape.get(name)}
+                      isFocused={false}
+                      showPositionSelector={true}
+                      onPositionChange={(positionIndex) => handlePositionChange(name, positionIndex)}
+                      capoFret={capoFret}
+                      capoLabelMode={capoLabelMode}
+                      showRomanNumerals={false}
+                      romanNumeral=""
+                      instrument={instrumentMode as 'guitar' | 'baritoneukulele' | 'ukulele'}
+                    />
+                  )}
                 </div>
               ))}
             </div>
