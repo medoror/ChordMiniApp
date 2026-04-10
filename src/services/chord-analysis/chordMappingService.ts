@@ -595,7 +595,9 @@ export class ChordMappingService {
     const parsed = this.parseChordName(chordName);
     if (!parsed) return null;
 
-    const semitone = this.rootToSemitone[parsed.root];
+    const normalizedNote = this.normalizeNoteToken(parsed.root);
+    const resolvedNote = this.enharmonicMap[normalizedNote] || normalizedNote;
+    const semitone = this.rootToSemitone[resolvedNote] ?? this.rootToSemitone[normalizedNote];
     if (semitone === undefined) return null;
     // Direct index into semitoneToUkeKey — no +5 offset like getBaritonUkeChordDataSync uses.
     // semitoneToUkeKey[0]='C', [1]='Db', ..., [11]='B' (flat spellings matching the ukulele DB).
