@@ -27,7 +27,7 @@ Direct lookup in `ukulele.json` (GCEA). No transposition. Slash chords stripped 
 
 ### Cache
 
-The existing `chordDataCache` Map in `GuitarChordsTab` component state handles all single-instrument modes unchanged. For duo mode, a second `ukuleleCacheMap` is added to component state alongside it. In duo mode, the chord loading loop populates both caches — `chordDataCache` for baritone data and `ukuleleCacheMap` for standard uke data. Both are cleared when the mode changes. Keys remain the chord name (e.g., `"C"`).
+The existing `chordDataCache` Map in `GuitarChordsTab` component state handles all single-instrument modes unchanged. For duo mode, a second `ukuleleCacheMap` is added to component state alongside it. In duo mode, the chord loading loop populates both caches — `chordDataCache` for baritone data and `ukuleleCacheMap` for standard uke data. Both are cleared when the mode changes — `ukuleleCacheMap` must be added to the existing `useEffect` that resets `chordDataCache` on `instrumentMode` change. Keys remain the chord name (e.g., `"C"`).
 
 ## Components
 
