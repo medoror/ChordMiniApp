@@ -295,3 +295,5 @@ devenv.local.yaml
 
 # pre-commit
 .pre-commit-config.yaml
+.superpowers/
+!docs/**/*.md
