@@ -502,6 +502,12 @@ export const GuitarChordsTab: React.FC<GuitarChordsTabProps> = ({
     );
   }
 
+  // instrumentMode without 'duo' — safe because 'duo' paths never reach these GuitarChordDiagram calls,
+  // but TypeScript needs the explicit narrowing since it can't infer it from the conditional structure.
+  const singleInstrument = instrumentMode !== 'duo'
+    ? instrumentMode
+    : 'guitar' as const;
+
   // DEFINE A SLOW, SMOOTH TWEEN TRANSITION
   // This provides a graceful, predictable motion that stops precisely on time.
   const itemTransition = {
@@ -736,7 +742,7 @@ export const GuitarChordsTab: React.FC<GuitarChordsTabProps> = ({
                             showRomanNumerals={false}
                             romanNumeral=""
                             labelClassName={diagramConfig.labelClass}
-                            instrument={instrumentMode as 'guitar' | 'baritoneukulele' | 'ukulele'}
+                            instrument={singleInstrument}
                           />
                         )}
                       </motion.div>
@@ -811,7 +817,7 @@ export const GuitarChordsTab: React.FC<GuitarChordsTabProps> = ({
                       capoLabelMode={capoLabelMode}
                       showRomanNumerals={false}
                       romanNumeral=""
-                      instrument={instrumentMode as 'guitar' | 'baritoneukulele' | 'ukulele'}
+                      instrument={singleInstrument}
                     />
                   )}
                 </div>

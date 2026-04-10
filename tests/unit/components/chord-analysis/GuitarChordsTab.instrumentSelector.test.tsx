@@ -9,12 +9,8 @@ import '@testing-library/jest-dom';
 
 // Mock next/dynamic to return the actual component synchronously
 jest.mock('next/dynamic', () => (fn: () => Promise<{ default: React.ComponentType<unknown> }>) => {
-  let Comp: React.ComponentType<unknown> | null = null;
-  fn().then((m) => { Comp = m.default; });
-  // eslint-disable-next-line react/display-name
-  const DynamicComponent = (props: unknown) => Comp ? React.createElement(Comp as React.ComponentType<object>, props as object) : null;
-  DynamicComponent.displayName = 'DynamicComponent';
-  return DynamicComponent;
+  // Synchronously return the already-mocked GuitarChordDiagram
+  return require('@/components/chord-playback/GuitarChordDiagram').default;
 });
 
 // GuitarChordsTab imports many things — mock the heavy ones
@@ -106,22 +102,6 @@ describe('GuitarChordsTab — instrument selector', () => {
 });
 
 describe('GuitarChordsTab — mode switching', () => {
-  it('should_render_single_diagram_after_switching_from_duo_to_guitar', async () => {
-    render(<GuitarChordsTab {...minimalProps} />);
-    const select = screen.getByRole('combobox', { name: /instrument/i });
-
-    // Switch to duo
-    fireEvent.change(select, { target: { value: 'duo' } });
-    const duoDiagrams = await screen.findAllByTestId('chord-diagram');
-    expect(duoDiagrams.length).toBeGreaterThanOrEqual(2);
-
-    // Switch back to guitar
-    fireEvent.change(select, { target: { value: 'guitar' } });
-    // After switching, should only render one diagram per chord, not two
-    const guitarDiagrams = await screen.findAllByTestId('chord-diagram');
-    expect(guitarDiagrams.length).toBeLessThan(duoDiagrams.length);
-  });
-
   it('should_load_both_baritone_and_standard_uke_data_in_duo_mode', async () => {
     render(<GuitarChordsTab {...minimalProps} />);
     const select = screen.getByRole('combobox', { name: /instrument/i });
@@ -183,7 +163,7 @@ describe('GuitarChordsTab — mode switching and data loading', () => {
 
     fireEvent.change(select, { target: { value: 'guitar' } });
     const guitarDiagrams = await screen.findAllByTestId('chord-diagram');
-    expect(guitarDiagrams.length).toBeLessThan(duoDiagrams.length);
+    expect(guitarDiagrams.length).toBe(1);
   });
 
   it('should_render_both_baritoneukulele_and_ukulele_diagrams_in_duo_mode', async () => {
