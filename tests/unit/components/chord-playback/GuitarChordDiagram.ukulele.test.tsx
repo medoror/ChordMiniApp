@@ -43,7 +43,7 @@ describe('GuitarChordDiagram — ukulele instrument', () => {
     expect(diagram).toHaveAttribute('data-tuning', 'D,G,B,E');
   });
 
-  it('should_use_EADGBE_6_string_tuning_when_instrument_is_guitar', () => {
+  it('should_render_6_string_diagram_when_instrument_is_guitar', () => {
     render(<GuitarChordDiagram chordData={mockChordData} />);
     const diagram = screen.getByTestId('chord-diagram');
     expect(diagram).toHaveAttribute('data-strings', '6');
