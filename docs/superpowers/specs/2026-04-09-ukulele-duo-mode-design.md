@@ -25,9 +25,9 @@ The instrument selector expands from two toggle buttons to a `<select>` dropdown
 
 Direct lookup in `ukulele.json` (GCEA). No transposition. Slash chords stripped to root. Null cases (`N.C.`, empty string) return `null`. Follows the exact pattern of `getBaritonUkeChordDataSync` minus the `transposeRootToBaritonUkeKey()` call.
 
-### Cache key format
+### Cache
 
-Cache keys change from `chordName` to `chordName_instrument` (e.g., `"C_guitar"`, `"C_baritoneukulele"`, `"C_ukulele"`). In duo mode, both `"C_baritoneukulele"` and `"C_ukulele"` are populated per chord. Cache is cleared on mode change, same as today.
+No change to cache key format — keys remain the chord name (e.g., `"C"`). The cache is scoped to the current mode and cleared in full on every mode change, so there is no collision between instruments. In duo mode, the chord loading loop runs twice per chord (once for baritone, once for standard uke) and stores each result under the same chord name key in two separate cache maps: `baritoneCacheMap` and `ukuleleCacheMap`. Both maps are cleared when the mode changes.
 
 ## Components
 
@@ -43,7 +43,7 @@ Cache keys change from `chordName` to `chordName_instrument` (e.g., `"C_guitar"`
   };
   ```
 - `instrument` prop widens to `'guitar' | 'baritoneukulele' | 'ukulele'`
-- No other changes to this component
+- The instrument selection conditional must be updated to handle the new value. Currently it is a binary `baritoneukulele ? BARITONE_UKE_INSTRUMENT : GUITAR_INSTRUMENT`; it becomes a three-way branch that returns `STANDARD_UKE_INSTRUMENT` when `instrument === 'ukulele'`.
 
 ### `GuitarChordsTab`
 
@@ -54,6 +54,8 @@ Cache keys change from `chordName` to `chordName_instrument` (e.g., `"C_guitar"`
 - Bottom: standard uke diagram with "Standard" label (`instrument='ukulele'`)
 
 Single-instrument modes render exactly as they do today.
+
+**Position selector in Duo mode:** The per-chord position selector (voicing picker) is hidden in Duo mode. Both diagrams render position 0 (the default voicing). This keeps the Duo card compact and avoids the complexity of two independent position selectors per chord.
 
 **`instrumentMode` type:**
 ```ts
@@ -79,8 +81,8 @@ Mirrors the existing baritone test file. Covers:
 
 - Dropdown renders with all 4 options
 - Selecting `'duo'` renders two diagrams per chord card
-- Cache keys use `chordName_instrument` format
-- Switching mode clears the cache
+- Switching mode clears both cache maps
+- In duo mode, both baritone and standard uke data are loaded per chord
 
 ### Additions to existing `GuitarChordDiagram` tests
 
