@@ -435,15 +435,16 @@ export class ChordMappingService {
       return 'major';
     }
 
-    // Direct mapping first
+    // Direct mapping first (exact match only)
     if (this.suffixMap[suffix]) {
       return this.suffixMap[suffix];
     }
 
     // Handle complex suffixes by finding the best match
     // Sort by pattern length (longest first) to prioritize more specific matches
+    // But exclude numeric suffixes to prevent false matches like '11' in 'add#11'
     const sortedPatterns = Object.entries(this.suffixMap)
-      .filter(([pattern]) => pattern !== '') // Exclude empty pattern
+      .filter(([pattern]) => pattern !== '' && !/^\d+$/.test(pattern)) // Exclude empty pattern and pure numbers
       .sort(([a], [b]) => b.length - a.length);
 
     for (const [pattern, dbSuffix] of sortedPatterns) {
@@ -453,6 +454,7 @@ export class ChordMappingService {
     }
 
     // If no pattern matches, return the original suffix
+    // (The caller should handle fallback logic if this suffix doesn't exist in DB)
     return suffix;
   }
 
@@ -562,12 +564,24 @@ export class ChordMappingService {
     const rootChords = ukeDb.chords[ukeKey];
     if (!rootChords) return null;
 
-    // Try exact suffix match, then fall back to major
-    return (
-      rootChords.find(chord => chord.suffix === normalizedSuffix) ||
-      rootChords.find(chord => chord.suffix === 'major') ||
-      null
-    );
+    // Try exact suffix match first
+    const exactMatch = rootChords.find(chord => chord.suffix === normalizedSuffix);
+    if (exactMatch) return exactMatch;
+
+    // If no exact match, try fallback chain for extended/exotic suffixes
+    const fallbackOrder = this.getFallbackOrder(normalizedSuffix);
+    for (const fallbackSuffix of fallbackOrder) {
+      const fallbackMatch = rootChords.find(chord => chord.suffix === fallbackSuffix);
+      if (fallbackMatch) return fallbackMatch;
+    }
+
+    // Final fallback to major
+    if (normalizedSuffix !== 'major') {
+      const majorChord = rootChords.find(chord => chord.suffix === 'major');
+      if (majorChord) return majorChord;
+    }
+
+    return null;
   }
 
   /**
@@ -592,11 +606,24 @@ export class ChordMappingService {
     const rootChords = ukeDb.chords[ukeKey];
     if (!rootChords) return null;
 
-    return (
-      rootChords.find(chord => chord.suffix === normalizedSuffix) ||
-      rootChords.find(chord => chord.suffix === 'major') ||
-      null
-    );
+    // Try exact suffix match first
+    const exactMatch = rootChords.find(chord => chord.suffix === normalizedSuffix);
+    if (exactMatch) return exactMatch;
+
+    // If no exact match, try fallback chain for extended/exotic suffixes
+    const fallbackOrder = this.getFallbackOrder(normalizedSuffix);
+    for (const fallbackSuffix of fallbackOrder) {
+      const fallbackMatch = rootChords.find(chord => chord.suffix === fallbackSuffix);
+      if (fallbackMatch) return fallbackMatch;
+    }
+
+    // Final fallback to major
+    if (normalizedSuffix !== 'major') {
+      const majorChord = rootChords.find(chord => chord.suffix === 'major');
+      if (majorChord) return majorChord;
+    }
+
+    return null;
   }
 
   /**

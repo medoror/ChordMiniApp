@@ -124,16 +124,14 @@ describe('ChordMappingService — getUkuleleChordDataSync', () => {
       expect(result!.suffix).toBe('dim');
     });
 
-    it('should_return_chord_with_fallback_for_unknown_suffix', () => {
-      // When a suffix doesn't map to anything in the uke DB, the implementation
-      // will try an exact match first, then fall back to major. The suffixMap's
-      // pattern matching may find something, or we fall back to major. Either way,
-      // we should get a valid chord.
-      const result = service.getUkuleleChordDataSync('C');
+    it('should_fallback_to_major_when_suffix_not_in_uke_db', () => {
+      // 'add#11' is an exotic suffix not in the uke DB.
+      // The service should fall back to major rather than returning
+      // a chord with an unsupported suffix like '11'.
+      const result = service.getUkuleleChordDataSync('C:add#11');
       expect(result).not.toBeNull();
       expect(result!.key).toBe('C');
-      // result!.suffix will be whatever the DB has for C major
-      expect(result!.suffix).toBeDefined();
+      expect(result!.suffix).toBe('major');
     });
   });
 
