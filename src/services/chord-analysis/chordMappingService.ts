@@ -571,6 +571,35 @@ export class ChordMappingService {
   }
 
   /**
+   * Look up standard ukulele chord data (GCEA tuning).
+   * Direct lookup in the ukulele DB — no transposition needed because
+   * the DB is already in GCEA tuning.
+   *
+   * Slash chords are resolved to their root chord.
+   */
+  public getUkuleleChordDataSync(chordName: string): ChordData | null {
+    const parsed = this.parseChordName(chordName);
+    if (!parsed) return null;
+
+    const semitone = this.rootToSemitone[parsed.root];
+    if (semitone === undefined) return null;
+    // Direct index into semitoneToUkeKey — no +5 offset like getBaritonUkeChordDataSync uses.
+    // semitoneToUkeKey[0]='C', [1]='Db', ..., [11]='B' (flat spellings matching the ukulele DB).
+    const ukeKey = this.semitoneToUkeKey[semitone];
+
+    const normalizedSuffix = this.normalizeUkeSuffix(parsed.suffix);
+    const ukeDb = getUkeDatabaseSync();
+    const rootChords = ukeDb.chords[ukeKey];
+    if (!rootChords) return null;
+
+    return (
+      rootChords.find(chord => chord.suffix === normalizedSuffix) ||
+      rootChords.find(chord => chord.suffix === 'major') ||
+      null
+    );
+  }
+
+  /**
    * Resolve the canonical chord label used by guitar diagrams.
    * Prefers an exact slash-chord match when the database supports it, and
    * otherwise falls back to the root-position label that will actually render.
