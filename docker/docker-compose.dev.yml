@@ -44,6 +44,9 @@ services:
     container_name: chordmini-frontend
     ports:
       - "3000:3000"
+    env_file:
+      - path: ../.env.docker
+        required: false
     environment:
       - NODE_ENV=production
       - PYTHON_API_URL=http://backend:8080
