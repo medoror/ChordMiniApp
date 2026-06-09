@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git check-ignore:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(gh api:*)",
+      "Bash(git -C /Users/michaeledoror/workspace/ChordMiniApp status)",
+      "Bash(git -C /Users/michaeledoror/workspace/ChordMiniApp diff)",
+      "Bash(git -C /Users/michaeledoror/workspace/ChordMiniApp add CLAUDE.md)",
+      "Bash(git -C:*)",
+      "Bash(ls /Users/michaeledoror/workspace/ChordMiniApp/.env*)",
+      "Bash(cat /Users/michaeledoror/workspace/ChordMiniApp/src/app/analyze/[videoId]/page.tsx)",
+      "Bash(grep -n \"firebaseReady\" /Users/michaeledoror/workspace/ChordMiniApp/src/app/analyze/[videoId]/page.tsx)",
+      "Bash(node -e \"const db = require\\(''''/Users/michaeledoror/workspace/ChordMiniApp/node_modules/@tombatossals/chords-db/lib/ukulele.json''''\\); console.log\\(''''keys:'''', db.keys\\); console.log\\(''''suffixes sample:'''', db.suffixes.slice\\(0, 10\\)\\);\")",
+      "Bash(node -e \"const db = require\\(''''/Users/michaeledoror/workspace/ChordMiniApp/node_modules/@tombatossals/chords-db/lib/ukulele.json''''\\); console.log\\(''''suffixes:'''', JSON.stringify\\(db.suffixes\\)\\);\")",
+      "Bash(node -e \"const g = require\\(''''/Users/michaeledoror/workspace/ChordMiniApp/node_modules/@tombatossals/chords-db/lib/guitar.json''''\\); console.log\\(''''guitar suffixes with maj:'''', g.suffixes.filter\\(s => s.toLowerCase\\(\\).includes\\(''''maj''''\\)\\)\\);\")",
+      "Bash(node -e \"const g = require\\(''''/Users/michaeledoror/workspace/ChordMiniApp/node_modules/@tombatossals/chords-db/lib/guitar.json''''\\); const suffixes = g.chords[''''C''''].map\\(c => c.suffix\\); console.log\\(''''C chord suffixes in guitar db:'''', suffixes\\);\")",
+      "Bash(npx jest:*)",
+      "Bash(npx tsc:*)",
+      "Bash(yx ls:*)",
+      "Bash(find:*)"
+    ]
+  }
+}
