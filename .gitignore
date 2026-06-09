@@ -132,6 +132,7 @@ ENV/
 python_backend/.env
 python_backend/venv/
 python_backend/__pycache__/
+python_backend/myenv/
 
 # ML models
 *.h5
