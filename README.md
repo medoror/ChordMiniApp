@@ -20,11 +20,14 @@ Two personal needs the upstream app didn't cover:
 
 This fork ships a Docker Compose dev stack that replaces Firebase with a local Postgres database.
 
+**Prerequisites:** [Docker](https://docs.docker.com/get-docker/) (with the Compose v2 plugin — included in Docker Desktop) and [just](https://github.com/casey/just#installation).
+
 1. Copy and fill the env file — only three keys are required:
    ```bash
    cp .env.docker.example .env.docker
-   # Set GEMINI_API_KEY, NEXT_PUBLIC_YOUTUBE_API_KEY, GENIUS_API_KEY
+   # Edit .env.docker and set GEMINI_API_KEY, NEXT_PUBLIC_YOUTUBE_API_KEY, GENIUS_API_KEY
    ```
+   > `.env.docker` must exist before running `just up`. The startup script will tell you if it's missing.
 
 2. Start everything (Postgres, Redis, Python backend, Next.js frontend):
    ```bash

@@ -19,7 +19,8 @@
       "Bash(npx jest:*)",
       "Bash(npx tsc:*)",
       "Bash(yx ls:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(git push *)"
     ]
   }
 }
